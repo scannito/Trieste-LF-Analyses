@@ -1,3 +1,5 @@
+#pragma once
+
 #include "TROOT.h"
 #include "TMath.h"
 #include "TF1.h"
