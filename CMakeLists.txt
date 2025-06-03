@@ -10,7 +10,7 @@ set(ANALYSIS_STE "AnalysisSte")
 include_directories(${INCLUDE_ROOT})
 
 # Find ROOT
-find_package(ROOT REQUIRED)
+find_package(ROOT REQUIRED COMPONENTS RooFit RooFitCore)
 include(${ROOT_USE_FILE}) # Importa le variabili e le funzioni di ROOT
 
 add_executable(PhiK0SAnalysis ${ANALYSIS_STE}/PhiK0SAnalysis.cpp ${SRC_ROOT}/Fitter.cpp ${SRC_ROOT}/SignalExtraction.cpp)
