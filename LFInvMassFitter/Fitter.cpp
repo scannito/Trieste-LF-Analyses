@@ -20,7 +20,7 @@
 #include "../AnalysisUtils/Plot.h"
 #include "../AnalysisUtils/Projections.h"
 
-#include "SignalExtraction.h"
+#include "SignalExtraction.cpp"
 
 void fitDataAndMCClosure2D(int mode) 
 {
