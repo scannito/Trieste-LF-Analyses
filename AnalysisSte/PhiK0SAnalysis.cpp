@@ -20,7 +20,7 @@
 #include "../AnalysisUtils/Plot.h"
 #include "../AnalysisUtils/Projections.h"
 
-#include "../LFInvMassFitter/SignalExtraction.cpp"
+//#include "../LFInvMassFitter/SignalExtraction.cpp"
 #include "../LFInvMassFitter/Fitter.cpp"
 
 int main()
