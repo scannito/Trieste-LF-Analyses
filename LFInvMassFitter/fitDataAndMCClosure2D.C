@@ -1,5 +1,3 @@
-#include <utility>
-
 #include "Riostream.h"
 #include "TFile.h"
 #include "TLegend.h"
@@ -20,6 +18,8 @@
 #include "../AnalysisUtils/Parameters.h"
 #include "../AnalysisUtils/FitFunctions.h"
 #include "../AnalysisUtils/Plot.h"
+#include "../AnalysisUtils/Projections.h"
+
 #include "SignalExtraction.h"
 
 TH2F* Project2D(THnSparseF* hn, Int_t axistocut, Int_t binlow, Int_t binup, Int_t axistoproj1, Int_t axistoproj2, Option_t* option = "", std::string hname = "") 
