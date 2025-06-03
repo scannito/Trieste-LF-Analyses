@@ -8,27 +8,27 @@
 #include <array>
 #include <string>
 
-Double_t VoigtPoly(Double_t* x, Double_t* par)
+inline Double_t VoigtPoly(Double_t* x, Double_t* par)
 {
     return par[0] * TMath::Voigt(x[0] - par[2], par[3], par[1], 4) + (par[4] + par[5] * x[0] + par[6] * TMath::Sqrt(x[0] - 0.987));
 }
 
-Double_t Voigt(Double_t* x, Double_t* par)
+inline Double_t Voigt(Double_t* x, Double_t* par)
 {
     return par[0] * TMath::Voigt(x[0] - par[2], par[3], par[1], 4);
 }
 
-Double_t Voigt1(Double_t* x, Double_t* par)
+inline Double_t Voigt1(Double_t* x, Double_t* par)
 {
     return TMath::Voigt(x[0] - par[1], par[2], par[0], 4);
 }
 
-Double_t PolySqrt(Double_t* x, Double_t* par)
+inline Double_t PolySqrt(Double_t* x, Double_t* par)
 {
     return par[0] + par[1] * x[0] + par[2] * TMath::Sqrt(x[0] - 0.987); 
 }
 
-Double_t DoubleSidedCrystalBallPoly(Double_t *x, Double_t *par)
+inline Double_t DoubleSidedCrystalBallPoly(Double_t *x, Double_t *par)
 { 
     Double_t alpha_l = par[0]; 
     Double_t alpha_h = par[1]; 
@@ -56,7 +56,7 @@ Double_t DoubleSidedCrystalBallPoly(Double_t *x, Double_t *par)
     return N * result + (par[7] + par[8] * x[0]);
 }
 
-Double_t DoubleSidedCrystalBall(Double_t *x, Double_t *par)
+inline Double_t DoubleSidedCrystalBall(Double_t *x, Double_t *par)
 { 
     Double_t alpha_l = par[0]; 
     Double_t alpha_h = par[1]; 
@@ -84,7 +84,7 @@ Double_t DoubleSidedCrystalBall(Double_t *x, Double_t *par)
     return N * result;
 }
 
-Double_t DoubleSidedCrystalBall1(Double_t *x, Double_t *par)
+inline Double_t DoubleSidedCrystalBall1(Double_t *x, Double_t *par)
 { 
     Double_t alpha_l = par[0]; 
     Double_t alpha_h = par[1]; 
@@ -111,12 +111,12 @@ Double_t DoubleSidedCrystalBall1(Double_t *x, Double_t *par)
     return result;
 }
 
-Double_t Poly1(Double_t* x, Double_t* par)
+inline Double_t Poly1(Double_t* x, Double_t* par)
 {
     return par[0] + par[1] * x[0];
 }
 
-Double_t PhiInvMassK0SNSigmadEdx(Double_t* x, Double_t* par) 
+inline Double_t PhiInvMassK0SNSigmadEdx(Double_t* x, Double_t* par) 
 {
     Double_t K0Ssig = DoubleSidedCrystalBall1(&x[0], &par[0]);
     Double_t K0Sbkg = Poly1(&x[0], &par[6]);
@@ -127,7 +127,7 @@ Double_t PhiInvMassK0SNSigmadEdx(Double_t* x, Double_t* par)
     return par[14] * Phisig * K0Ssig + par[15] * Phisig * K0Sbkg + par[16] * Phibkg * K0Ssig + par[17] * Phibkg * K0Sbkg;
 }
 
-Double_t PhiInvMassK0SNSigmadEdxSig(Double_t* x, Double_t* par) 
+inline Double_t PhiInvMassK0SNSigmadEdxSig(Double_t* x, Double_t* par) 
 {
     Double_t K0Ssig = DoubleSidedCrystalBall1(&x[0], &par[0]);
     Double_t Phisig = Voigt1(&x[1], &par[6]);
