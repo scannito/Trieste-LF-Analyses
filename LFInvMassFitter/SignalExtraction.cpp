@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Riostream.h"
 #include "TFile.h"
 #include "TLegend.h"
