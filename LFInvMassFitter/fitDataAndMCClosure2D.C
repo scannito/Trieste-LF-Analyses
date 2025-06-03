@@ -22,8 +22,6 @@
 #include "../AnalysisUtils/Plot.h"
 #include "SignalExtraction.h"
 
-using namespace std;
-
 TH2F* Project2D(THnSparseF* hn, Int_t axistocut, Int_t binlow, Int_t binup, Int_t axistoproj1, Int_t axistoproj2, Option_t* option = "", std::string hname = "") 
 { 
     if (!hn) return 0;
@@ -34,7 +32,7 @@ TH2F* Project2D(THnSparseF* hn, Int_t axistocut, Int_t binlow, Int_t binup, Int_
     return h2;
 }
 
-TH2F* Project2D(THnSparseF* hn, Int_t axistocut1, Int_t binlow1, Int_t binup1, Int_t axistocut2, Int_t binlow2, Int_t binup2, Int_t axistoproj1, Int_t axistoproj2, Option_t* option = "", string hname = "") 
+TH2F* Project2D(THnSparseF* hn, Int_t axistocut1, Int_t binlow1, Int_t binup1, Int_t axistocut2, Int_t binlow2, Int_t binup2, Int_t axistoproj1, Int_t axistoproj2, Option_t* option = "", std::string hname = "") 
 { 
     if (!hn) return 0;
     hn->GetAxis(axistocut1)->SetRange(binlow1, binup1);
@@ -44,7 +42,7 @@ TH2F* Project2D(THnSparseF* hn, Int_t axistocut1, Int_t binlow1, Int_t binup1, I
     h2->SetDirectory(0);
     return h2;
 }
-TH1F* Project1D(THnSparseF* hn, Int_t axistocut1, Int_t binlow1, Int_t binup1, Int_t axistocut2, Int_t binlow2, Int_t binup2, Int_t axistocut3, Int_t binlow3, Int_t binup3, Int_t axistoproj, Option_t* option = "", string hname = "") 
+TH1F* Project1D(THnSparseF* hn, Int_t axistocut1, Int_t binlow1, Int_t binup1, Int_t axistocut2, Int_t binlow2, Int_t binup2, Int_t axistocut3, Int_t binlow3, Int_t binup3, Int_t axistoproj, Option_t* option = "", std::string hname = "") 
 { 
     if (!hn) return 0;
     hn->GetAxis(axistocut1)->SetRange(binlow1, binup1);
@@ -75,25 +73,25 @@ void fitDataAndMCClosure2D(int mode)
     TDirectoryFile* PhipurHist;
     TDirectoryFile* eventHist;
 
-    string purPhiHistName;
-    array<string, nbin_deltay> purPhiK0SInvMassHistName;
-    array<string, nbin_deltay> purPhiPiInvMassHistName;
-    string eventHistName;
-    string binEventHistName;
+    std::string purPhiHistName;
+    std::array<std::string, nbin_deltay> purPhiK0SInvMassHistName;
+    std::array<std::string, nbin_deltay> purPhiPiInvMassHistName;
+    std::string eventHistName;
+    std::string binEventHistName;
 
     TFile* file2;
     TDirectoryFile* phik0shortanalysis2;
     TDirectoryFile* PhiK0SHist;
 
-    array<string, nbin_deltay> PhiK0SInvMassHistName;
+    std::array<std::string, nbin_deltay> PhiK0SInvMassHistName;
 
     TDirectoryFile* phik0shortanalysis3;
     TDirectoryFile* PhiPiHist;
 
-    array<string, nbin_deltay> PhiPiInvMassHistName;
+    std::array<std::string, nbin_deltay> PhiPiInvMassHistName;
 
-    string outPath;
-    string outFileName;
+    std::string outPath;
+    std::string outFileName;
 
     if (mode == 0) {
         file1 = TFile::Open("AnalysisResultsMediumNoTLV.root");
@@ -378,10 +376,10 @@ void fitDataAndMCClosure2D(int mode)
     Double_t purityVoigtPi[nbin_deltay][nbin_mult] = {0}, errpurityVoigtPi[nbin_deltay][nbin_mult] = {0};
 
     for (int j = 0; j < nbin_mult; j++) {
-        tie(purityVoigt[j], errpurityVoigt[j]) = GetPhiPurityAndError(h1PhipurInvMass[j], Form("Phipur%i", j), mode-1, 0, {j});
+        std::tie(purityVoigt[j], errpurityVoigt[j]) = GetPhiPurityAndError(h1PhipurInvMass[j], Form("Phipur%i", j), mode-1, 0, {j});
         for (int i = 0; i < nbin_deltay; i++) {
-            tie(purityVoigtK0S[i][j], errpurityVoigtK0S[i][j]) = GetPhiPurityAndError(h1PhipurK0SInvMass[i][j], Form("PhipurK0S%i%i", i, j), mode-1, 1, {i, j});
-            tie(purityVoigtPi[i][j], errpurityVoigtPi[i][j]) = GetPhiPurityAndError(h1PhipurPiInvMass[i][j], Form("PhipurPi%i%i", i, j), mode-1, 2, {i, j});
+            std::tie(purityVoigtK0S[i][j], errpurityVoigtK0S[i][j]) = GetPhiPurityAndError(h1PhipurK0SInvMass[i][j], Form("PhipurK0S%i%i", i, j), mode-1, 1, {i, j});
+            std::tie(purityVoigtPi[i][j], errpurityVoigtPi[i][j]) = GetPhiPurityAndError(h1PhipurPiInvMass[i][j], Form("PhipurPi%i%i", i, j), mode-1, 2, {i, j});
         }
     }
 
@@ -460,7 +458,7 @@ void fitDataAndMCClosure2D(int mode)
     legPurityPhiK0S2->SetLineWidth(0);
     legPurityPhiK0S2->Draw("same");
 
-    string outNamePurityPhiK0S = outPath + "purPhiK0S.root";
+    std::string outNamePurityPhiK0S = outPath + "purPhiK0S.root";
     cPurityPhiK0S->SaveAs(outNamePurityPhiK0S.c_str());
     outNamePurityPhiK0S = outPath + "purPhiK0S.pdf";
     cPurityPhiK0S->SaveAs(outNamePurityPhiK0S.c_str());
@@ -496,7 +494,7 @@ void fitDataAndMCClosure2D(int mode)
     legPurityPhiPi2->SetLineWidth(0);
     legPurityPhiPi2->Draw("same");
 
-    string outNamePurityPhiPi = outPath + "purPhiPi.root";
+    std::string outNamePurityPhiPi = outPath + "purPhiPi.root";
     cPurityPhiPi->SaveAs(outNamePurityPhiPi.c_str());
     outNamePurityPhiPi = outPath + "purPhiPi.pdf";
     cPurityPhiPi->SaveAs(outNamePurityPhiPi.c_str());
@@ -509,10 +507,10 @@ void fitDataAndMCClosure2D(int mode)
     Double_t purityVoigtK0SMB[nbin_deltay] = {0}, errpurityVoigtK0SMB[nbin_deltay] = {0};
     Double_t purityVoigtPiMB[nbin_deltay] = {0}, errpurityVoigtPiMB[nbin_deltay] = {0};
 
-    tie(purityVoigtMB, errpurityVoigtMB) = GetPhiPurityAndError(h1PhipurInvMassMB, "PhipurMB", mode-1, 0, {});
+    std::tie(purityVoigtMB, errpurityVoigtMB) = GetPhiPurityAndError(h1PhipurInvMassMB, "PhipurMB", mode-1, 0, {});
     for (int i = 0; i < nbin_deltay; i++) {
-        tie(purityVoigtK0SMB[i], errpurityVoigtK0SMB[i]) = GetPhiPurityAndError(h1PhipurK0SInvMassMB[i], Form("PhipurK0SMB%i", i), mode-1, 1, {i});
-        tie(purityVoigtPiMB[i], errpurityVoigtPiMB[i]) = GetPhiPurityAndError(h1PhipurPiInvMassMB[i], Form("PhipurPiMB%i", i), mode-1, 2, {i});
+        std::tie(purityVoigtK0SMB[i], errpurityVoigtK0SMB[i]) = GetPhiPurityAndError(h1PhipurK0SInvMassMB[i], Form("PhipurK0SMB%i", i), mode-1, 1, {i});
+        std::tie(purityVoigtPiMB[i], errpurityVoigtPiMB[i]) = GetPhiPurityAndError(h1PhipurPiInvMassMB[i], Form("PhipurPiMB%i", i), mode-1, 2, {i});
     }
 
     //********************************************************************************************
@@ -564,13 +562,13 @@ void fitDataAndMCClosure2D(int mode)
 
     //********************************************************************************************
 
-    string outNameCanvasK0S = outPath + "fitCanvasK0S2D.root";
+    std::string outNameCanvasK0S = outPath + "fitCanvasK0S2D.root";
     TFile* fileCanvasK0S = new TFile(outNameCanvasK0S.c_str(), "RECREATE");
 
-    string outNameCanvasPiTPC = outPath + "fitCanvasPiTPC2D.root";
+    std::string outNameCanvasPiTPC = outPath + "fitCanvasPiTPC2D.root";
     TFile* fileCanvasPiTPC = new TFile(outNameCanvasPiTPC.c_str(), "RECREATE");
 
-    string outNameCanvasPiTOF = outPath + "fitCanvasPiTOF2D.root";
+    std::string outNameCanvasPiTOF = outPath + "fitCanvasPiTOF2D.root";
     TFile* fileCanvasPiTOF = new TFile(outNameCanvasPiTOF.c_str(), "RECREATE");
 
     for (int i = 0; i < nbin_deltay; i++) {
@@ -592,7 +590,7 @@ void fitDataAndMCClosure2D(int mode)
                 //if (i != 2 || k != 3) continue;
                 //if (i != 0) continue;
 
-                tie(PhiK0SYieldpTdiff[i][j][k], errPhiK0SYieldpTdiff[i][j][k]) = FitPhiK0S(h2PhiK0SInvMass[i][j][k], {i, j, k}, fileCanvasK0S);
+                std::tie(PhiK0SYieldpTdiff[i][j][k], errPhiK0SYieldpTdiff[i][j][k]) = FitPhiK0S(h2PhiK0SInvMass[i][j][k], {i, j, k}, fileCanvasK0S);
                 PhiK0SYieldpTdiff[i][j][k] = PhiK0SYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTK0S_axis[k+1] - pTK0S_axis[k]) /*/ purityPhiK0S[i][j]*/ / (nEventsPhi * purityPhi[j]);
                 errPhiK0SYieldpTdiff[i][j][k] = errPhiK0SYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTK0S_axis[k+1] - pTK0S_axis[k]) /*/ purityPhiK0S[i][j]*/ / (nEventsPhi * purityPhi[j]);
                 if (mode != 3) {
@@ -609,7 +607,7 @@ void fitDataAndMCClosure2D(int mode)
                 //if (i != 0 || j != 0) continue;
                 //if (i != 0) continue;
 
-                tie(PhiPiTPCYieldpTdiff[i][j][k], errPhiPiTPCYieldpTdiff[i][j][k]) = FitPhiPi(h2PhiInvMassPiNSigmaTPC[i][j][k], {i, j, k}, 0, mode-2, fileCanvasPiTPC);
+                std::tie(PhiPiTPCYieldpTdiff[i][j][k], errPhiPiTPCYieldpTdiff[i][j][k]) = FitPhiPi(h2PhiInvMassPiNSigmaTPC[i][j][k], {i, j, k}, 0, mode-2, fileCanvasPiTPC);
                 PhiPiTPCYieldpTdiff[i][j][k] = PhiPiTPCYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTPi_axis[k+1] - pTPi_axis[k]) /*/ purityPhiPi[i][j]*/ / (nEventsPhi * purityPhi[j]);
                 errPhiPiTPCYieldpTdiff[i][j][k] = errPhiPiTPCYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTPi_axis[k+1] - pTPi_axis[k]) /*/ purityPhiPi[i][j]*/ / (nEventsPhi * purityPhi[j]);
                 //if (errPhiPiTPCYieldpTdiff[i][j][k] != errPhiPiTPCYieldpTdiff[i][j][k]) errPhiPiTPCYieldpTdiff[i][j][k] = 0.0;
@@ -621,7 +619,7 @@ void fitDataAndMCClosure2D(int mode)
                 h1PhiPiTPCYield[i][j]->SetBinContent(k+1, PhiPiTPCYieldpTdiff[i][j][k]);
                 h1PhiPiTPCYield[i][j]->SetBinError(k+1, errPhiPiTPCYieldpTdiff[i][j][k]);
                 
-                tie(PhiPiTOFYieldpTdiff[i][j][k], errPhiPiTOFYieldpTdiff[i][j][k]) = FitPhiPi(h2PhiInvMassPiNSigmaTOF[i][j][k], {i, j, k}, 1, mode-2, fileCanvasPiTOF);
+                std::tie(PhiPiTOFYieldpTdiff[i][j][k], errPhiPiTOFYieldpTdiff[i][j][k]) = FitPhiPi(h2PhiInvMassPiNSigmaTOF[i][j][k], {i, j, k}, 1, mode-2, fileCanvasPiTOF);
                 PhiPiTOFYieldpTdiff[i][j][k] = PhiPiTOFYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTPi_axis[k+1] - pTPi_axis[k]) /*/ purityPhiPi[i][j]*/ / (nEventsPhi * purityPhi[j]);
                 errPhiPiTOFYieldpTdiff[i][j][k] = errPhiPiTOFYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTPi_axis[k+1] - pTPi_axis[k]) /*/ purityPhiPi[i][j]*/ / (nEventsPhi * purityPhi[j]);
                 //if (errPhiPiTOFYieldpTdiff[i][j][k] != errPhiPiTOFYieldpTdiff[i][j][k]) errPhiPiTOFYieldpTdiff[i][j][k] = 0.0;
@@ -657,7 +655,7 @@ void fitDataAndMCClosure2D(int mode)
             //if (i != 2) continue;
             //continue;
 
-            tie(PhiK0SYieldpTdiffMB[i][k], errPhiK0SYieldpTdiffMB[i][k]) = FitPhiK0S(h2PhiK0SInvMassMB[i][k], {i, k}, fileCanvasK0S);
+            std::tie(PhiK0SYieldpTdiffMB[i][k], errPhiK0SYieldpTdiffMB[i][k]) = FitPhiK0S(h2PhiK0SInvMassMB[i][k], {i, k}, fileCanvasK0S);
             PhiK0SYieldpTdiffMB[i][k] = PhiK0SYieldpTdiffMB[i][k] / deltay_axis[i] / (pTK0S_axis[k+1] - pTK0S_axis[k]) /*/ purityPhiK0SMB[i]*/ / (nEventsPhi * purityPhiMB);
             errPhiK0SYieldpTdiffMB[i][k] = errPhiK0SYieldpTdiffMB[i][k] / deltay_axis[i] / (pTK0S_axis[k+1] - pTK0S_axis[k]) /*/ purityPhiK0SMB[i]*/ / (nEventsPhi * purityPhiMB);
             if (mode != 3) {
@@ -674,7 +672,7 @@ void fitDataAndMCClosure2D(int mode)
             //if (i != 0) continue;
             //continue;
 
-            tie(PhiPiTPCYieldpTdiffMB[i][k], errPhiPiTPCYieldpTdiffMB[i][k]) = FitPhiPi(h2PhiInvMassPiNSigmaTPCMB[i][k], {i, k}, 0, mode-2, fileCanvasPiTPC);
+            std::tie(PhiPiTPCYieldpTdiffMB[i][k], errPhiPiTPCYieldpTdiffMB[i][k]) = FitPhiPi(h2PhiInvMassPiNSigmaTPCMB[i][k], {i, k}, 0, mode-2, fileCanvasPiTPC);
             PhiPiTPCYieldpTdiffMB[i][k] = PhiPiTPCYieldpTdiffMB[i][k] / deltay_axis[i] / (pTPi_axis[k+1] - pTPi_axis[k]) /*/ purityPhiPiMB[i]*/ / (nEventsPhi * purityPhiMB);
             errPhiPiTPCYieldpTdiffMB[i][k] = errPhiPiTPCYieldpTdiffMB[i][k] / deltay_axis[i] / (pTPi_axis[k+1] - pTPi_axis[k]) /*/ purityPhiPiMB[i]*/ / (nEventsPhi * purityPhiMB);
             //if (errPhiPiTPCYieldpTdiffMB[i][k] != errPhiPiTPCYieldpTdiffMB[i][k]) errPhiPiTPCYieldpTdiffMB[i][k] = 0.0;
@@ -686,7 +684,7 @@ void fitDataAndMCClosure2D(int mode)
             h1PhiPiTPCYieldMB[i]->SetBinContent(k+1, PhiPiTPCYieldpTdiffMB[i][k]);
             h1PhiPiTPCYieldMB[i]->SetBinError(k+1, errPhiPiTPCYieldpTdiffMB[i][k]);
 
-            tie(PhiPiTOFYieldpTdiffMB[i][k], errPhiPiTOFYieldpTdiffMB[i][k]) = FitPhiPi(h2PhiInvMassPiNSigmaTOFMB[i][k], {i, k}, 1, mode-2, fileCanvasPiTOF);
+            std::tie(PhiPiTOFYieldpTdiffMB[i][k], errPhiPiTOFYieldpTdiffMB[i][k]) = FitPhiPi(h2PhiInvMassPiNSigmaTOFMB[i][k], {i, k}, 1, mode-2, fileCanvasPiTOF);
             PhiPiTOFYieldpTdiffMB[i][k] = PhiPiTOFYieldpTdiffMB[i][k] / deltay_axis[i] / (pTPi_axis[k+1] - pTPi_axis[k]) /*/ purityPhiPiMB[i]*/ / (nEventsPhi * purityPhiMB);
             errPhiPiTOFYieldpTdiffMB[i][k] = errPhiPiTOFYieldpTdiffMB[i][k] / deltay_axis[i] / (pTPi_axis[k+1] - pTPi_axis[k]) /*/ purityPhiPiMB[i]*/ / (nEventsPhi * purityPhiMB);
             //if (errPhiPiTOFYieldpTdiffMB[i][k] != errPhiPiTOFYieldpTdiffMB[i][k]) errPhiPiTOFYieldpTdiffMB[i][k] = 0.0;
@@ -712,9 +710,9 @@ void fitDataAndMCClosure2D(int mode)
 
     //********************************************************************************************
 
-    array<TCanvas*, nbin_deltay> cPhiK0SYield = PlotHistograms(h1PhiK0SYield, h1PhiK0SYieldMB, outPath, "rawSpectrumK0SDY%i2D");
-    array<TCanvas*, nbin_deltay> cPhiPiTPCYield = PlotHistograms(h1PhiPiTPCYield, h1PhiPiTPCYieldMB, outPath, "rawSpectrumPiTPCDY%i2D");
-    array<TCanvas*, nbin_deltay> cPhiPiTOFYield = PlotHistograms(h1PhiPiTOFYield, h1PhiPiTOFYieldMB, outPath, "rawSpectrumPiTOFDY%i2D");
+    std::array<TCanvas*, nbin_deltay> cPhiK0SYield = PlotHistograms(h1PhiK0SYield, h1PhiK0SYieldMB, outPath, "rawSpectrumK0SDY%i2D");
+    std::array<TCanvas*, nbin_deltay> cPhiPiTPCYield = PlotHistograms(h1PhiPiTPCYield, h1PhiPiTPCYieldMB, outPath, "rawSpectrumPiTPCDY%i2D");
+    std::array<TCanvas*, nbin_deltay> cPhiPiTOFYield = PlotHistograms(h1PhiPiTOFYield, h1PhiPiTOFYieldMB, outPath, "rawSpectrumPiTOFDY%i2D");
 
     //********************************************************************************************
 
