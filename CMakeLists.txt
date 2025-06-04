@@ -8,6 +8,7 @@ set(ANALYSIS_STE "AnalysisSte")
 
 # Add the include directories to the project
 include_directories(${INCLUDE_ROOT})
+#include_directories(${CMAKE_SOURCE_DIR})
 
 # Find ROOT
 find_package(ROOT REQUIRED COMPONENTS RooFit RooFitCore)
