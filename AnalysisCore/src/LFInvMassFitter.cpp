@@ -30,6 +30,15 @@ using namespace RooFit;
 
 ClassImp(LFInvMassFitter);
 
+LFInvMassFitter::LFInvMassFitter() : TNamed("", ""), mHisto(nullptr) {}
+LFInvMassFitter::LFInvMassFitter(const char* name, const char* title) : TNamed(name, title), mHisto(nullptr) {}
+LFInvMassFitter::~LFInvMassFitter() {
+    if (mHisto) {
+        delete mHisto;
+        mHisto = nullptr;
+    }
+}
+
 std::pair<Double_t, Double_t> LFInvMassFitter::GetPhiPurityAndError(TH1F* h1PhiInvMass, std::string nameCanvas, Int_t isDataOrReco, Int_t isK0SOrPi, std::vector<Int_t> indices, bool printCanvas)
 {
     h1PhiInvMass->SetTitle("; #it{M}(K^{+}K^{#minus}) (GeV/#it{c}^{2}); Counts");
