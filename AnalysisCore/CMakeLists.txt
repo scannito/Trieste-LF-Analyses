@@ -1,6 +1,6 @@
 # Fitter headers & LinkDef
-set(FITTER_HEADERS include/LFInvMassFitter.h)
-set(LINKDEF LinkDef.h)
+set(FITTER_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/LFInvMassFitter.h)
+set(LINKDEF ${CMAKE_CURRENT_SOURCE_DIR}/LinkDef.h)
 
 # Generate ROOT dictionary
 ROOT_GENERATE_DICTIONARY(G__LFInvMassFitter ${FITTER_HEADERS} LINKDEF ${LINKDEF})
