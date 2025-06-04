@@ -24,13 +24,13 @@
 #include "../AnalysisUtils/Plot.h"
 #include "../AnalysisUtils/Projections.h"
 
-#include "../include/Fitter.h"
+#include "../include/LFInvMassFitter.h"
 
 using namespace RooFit;
 
-ClassImp(Fitter);
+ClassImp(LFInvMassFitter);
 
-std::pair<Double_t, Double_t> Fitter::GetPhiPurityAndError(TH1F* h1PhiInvMass, std::string nameCanvas, Int_t isDataOrReco, Int_t isK0SOrPi, std::vector<Int_t> indices, bool printCanvas)
+std::pair<Double_t, Double_t> LFInvMassFitter::GetPhiPurityAndError(TH1F* h1PhiInvMass, std::string nameCanvas, Int_t isDataOrReco, Int_t isK0SOrPi, std::vector<Int_t> indices, bool printCanvas)
 {
     h1PhiInvMass->SetTitle("; #it{M}(K^{+}K^{#minus}) (GeV/#it{c}^{2}); Counts");
     Double_t binsize = h1PhiInvMass->GetXaxis()->GetBinWidth(1);
@@ -121,7 +121,7 @@ std::pair<Double_t, Double_t> Fitter::GetPhiPurityAndError(TH1F* h1PhiInvMass, s
     return std::make_pair(purityVoigt, errpurityVoigt);
 }
 
-std::pair<Double_t, Double_t> Fitter::FitPhiK0S(TH2F* h2PhiK0SInvMass, std::vector<Int_t> indices, TFile* file,
+std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiK0S(TH2F* h2PhiK0SInvMass, std::vector<Int_t> indices, TFile* file,
                                                 const std::vector<Double_t>& params, const std::vector<Double_t>& lowLimits, const std::vector<Double_t>& upLimits)
 {
     // Definisci le variabili x e y
@@ -252,7 +252,7 @@ std::pair<Double_t, Double_t> Fitter::FitPhiK0S(TH2F* h2PhiK0SInvMass, std::vect
     return std::make_pair(PhiK0SYieldpTdiff, errPhiK0SYieldpTdiff);
 }
 
-std::pair<Double_t, Double_t> Fitter::FitPhiPi(TH2F* h2PhiPiInvMass, std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, TFile* file,
+std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiPi(TH2F* h2PhiPiInvMass, std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, TFile* file,
                                                const std::vector<Double_t>& params, const std::vector<Double_t>& lowLimits, const std::vector<Double_t>& upLimits)
 {
     // Definisci le variabili x e y
@@ -449,7 +449,7 @@ std::pair<Double_t, Double_t> Fitter::FitPhiPi(TH2F* h2PhiPiInvMass, std::vector
     return std::make_pair(PhiPiYieldpTdiff, errPhiPiYieldpTdiff);
 }
 
-void Fitter::fitDataAndMCClosure2D(int mode) 
+void LFInvMassFitter::fitDataAndMCClosure2D(int mode) 
 {
     //**************************************************************************************************************
     // Histograms retrieving and projections depending on the mode: data (old or new) or MC closure test

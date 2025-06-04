@@ -20,9 +20,12 @@
 #include "../AnalysisUtils/Plot.h"
 #include "../AnalysisUtils/Projections.h"*/
 
-#include "../LFInvMassFitter/include/Fitter.h"
+#include "../AnalysisCore/include/LFInvMassFitter.h"
 
 int main()
 {
     std::cout << "Starting Phi K0S Analysis..." << std::endl;
+
+    LFInvMassFitter PhiK0SFitter;
+
 }

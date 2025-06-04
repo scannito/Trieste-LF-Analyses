@@ -38,12 +38,12 @@
 #include "RooVoigtian.h"
 #include "RooGenericPdf.h"
 
-class Fitter : public TNamed 
+class LFInvMassFitter : public TNamed 
 {
     public:
-        Fitter();
-        Fitter(const char* name, const char* title);
-        ~Fitter();
+        LFInvMassFitter();
+        LFInvMassFitter(const char* name, const char* title);
+        ~LFInvMassFitter();
 
         std::pair<Double_t, Double_t> GetPhiPurityAndError(TH1F* h1PhiInvMass, std::string nameCanvas, Int_t isDataOrReco, Int_t isK0SOrPi, std::vector<Int_t> indices, bool printCanvas = false);
         std::pair<Double_t, Double_t> FitPhiK0S(TH2F* h2PhiK0SInvMass, std::vector<Int_t> indices, TFile* file,
@@ -60,6 +60,6 @@ class Fitter : public TNamed
     private:
         TH1F* mHisto;
 
-    ClassDef(Fitter, 1);
+    ClassDef(LFInvMassFitter, 1);
 };
 

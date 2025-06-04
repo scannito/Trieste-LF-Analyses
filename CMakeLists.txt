@@ -12,8 +12,8 @@ include(${ROOT_USE_FILE})
 
 # Source/include path
 set(INCLUDE_ROOT "${CMAKE_SOURCE_DIR}/AnalysisUtils")
-set(SRC_ROOT "${CMAKE_SOURCE_DIR}/LFInvMassFitter/src")
-set(HEADER_ROOT "${CMAKE_SOURCE_DIR}/LFInvMassFitter/include")
+set(SRC_ROOT "${CMAKE_SOURCE_DIR}/AnalysisCore/src")
+set(HEADER_ROOT "${CMAKE_SOURCE_DIR}/AnalysisCore/include")
 set(ANALYSIS_STE "${CMAKE_SOURCE_DIR}/AnalysisSte")
 
 # Fitter headers & LinkDef
