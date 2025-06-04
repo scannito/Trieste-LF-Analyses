@@ -20,7 +20,7 @@
 #include "../AnalysisUtils/Plot.h"
 #include "../AnalysisUtils/Projections.h"*/
 
-#include "../AnalysisCore/include/LFInvMassFitter.h"
+#include "LFInvMassFitter.h"
 
 int main()
 {
