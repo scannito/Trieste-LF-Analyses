@@ -18,7 +18,7 @@ set(ANALYSIS_STE "${CMAKE_SOURCE_DIR}/AnalysisSte")
 
 # Fitter headers & LinkDef
 set(FITTER_HEADERS ${HEADER_ROOT}/Fitter.h)
-set(LINKDEF ${CMAKE_SOURCE_DIR}/LFInvMassFitter/LinkDef.h)
+set(LINKDEF ${HEADER_ROOT}LinkDef.h)
 
 # Generate ROOT dictionary
 ROOT_GENERATE_DICTIONARY(G__Fitter ${FITTER_HEADERS} LINKDEF ${LINKDEF})
