@@ -2,22 +2,41 @@
 cmake_minimum_required(VERSION 3.10)
 project(Trieste-LF-Analyses CXX)
 
-set(INCLUDE_ROOT "AnalysisUtils")
-set(SRC_ROOT "LFInvMassFitter/src")
-set(ANALYSIS_STE "AnalysisSte")
-
-# Add the include directories to the project
-include_directories(${INCLUDE_ROOT})
-include_directories(${CMAKE_SOURCE_DIR})
+# Set standard C++
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find ROOT
 find_package(ROOT REQUIRED COMPONENTS RooFit RooFitCore)
-include(${ROOT_USE_FILE}) # Importa le variabili e le funzioni di ROOT
+include(${ROOT_USE_FILE})
 
-add_executable(PhiK0SAnalysis ${ANALYSIS_STE}/PhiK0SAnalysis.cpp ${SRC_ROOT}/Fitter.cpp)
+# Source/include path
+set(INCLUDE_ROOT "${CMAKE_SOURCE_DIR}/AnalysisUtils")
+set(SRC_ROOT "${CMAKE_SOURCE_DIR}/LFInvMassFitter/src")
+set(HEADER_ROOT "${CMAKE_SOURCE_DIR}/LFInvMassFitter/include")
+set(ANALYSIS_STE "${CMAKE_SOURCE_DIR}/AnalysisSte")
 
-# Collega le librerie ROOT all'eseguibile
-target_link_libraries(PhiK0SAnalysis ${ROOT_LIBRARIES})
+# Fitter headers & LinkDef
+set(FITTER_HEADERS ${HEADER_ROOT}/Fitter.h)
+set(LINKDEF ${CMAKE_SOURCE_DIR}/LFInvMassFitter/LinkDef.h)
+
+# Generate ROOT dictionary
+ROOT_GENERATE_DICTIONARY(G__Fitter ${FITTER_HEADERS} LINKDEF ${LINKDEF})
+
+# Add dictionary and sources to the library
+add_library(FitterDict ${SRC_ROOT}/Fitter.cpp ${CMAKE_BINARY_DIR}/G__Fitter.cxx)
+
+# Add the include directories to the project
+include_directories(${INCLUDE_ROOT} ${HEADER_ROOT} ${CMAKE_BINARY_DIR})
+
+# Link ROOT to the FitterDict library
+target_link_libraries(FitterDict ${ROOT_LIBRARIES})
+
+# Define the executable
+add_executable(PhiK0SAnalysis ${ANALYSIS_STE}/PhiK0SAnalysis.cpp)
+
+# Link both your library and ROOT to the executable
+target_link_libraries(PhiK0SAnalysis FitterDict ${ROOT_LIBRARIES})
 
 # Target di installazione (opzionale)
 #install(TARGETS mergeTree DESTINATION bin)
