@@ -14,10 +14,14 @@ include(${ROOT_USE_FILE})
 add_subdirectory(AnalysisCore)
 
 # Source/include path
+set(ANALYSIS_UTILS "${CMAKE_SOURCE_DIR}/AnalysisUtils")
 set(ANALYSIS_STE "${CMAKE_SOURCE_DIR}/AnalysisSte")
 
 # Define the executable
 add_executable(PhiK0SAnalysis ${ANALYSIS_STE}/PhiK0SAnalysis.cpp)
+
+# Include AnalysisUtils headers for executable
+target_include_directories(PhiK0SAnalysis PRIVATE ${ANALYSIS_UTILS})
 
 # Link both your library and ROOT to the executable
 target_link_libraries(PhiK0SAnalysis PRIVATE AnalysisCore ${ROOT_LIBRARIES})
