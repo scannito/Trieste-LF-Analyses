@@ -14,11 +14,7 @@ include(${ROOT_USE_FILE})
 add_subdirectory(AnalysisCore)
 
 # Source/include path
-set(INCLUDE_ROOT "${CMAKE_SOURCE_DIR}/AnalysisUtils")
 set(ANALYSIS_STE "${CMAKE_SOURCE_DIR}/AnalysisSte")
-
-# Add the include directories to the project
-include_directories(${INCLUDE_ROOT} ${HEADER_ROOT} ${CMAKE_BINARY_DIR})
 
 # Define the executable
 add_executable(PhiK0SAnalysis ${ANALYSIS_STE}/PhiK0SAnalysis.cpp)
