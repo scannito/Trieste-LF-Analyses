@@ -4,6 +4,6 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class LFInvMassFitter+;ù
+#pragma link C++ class LFInvMassFitter+;
 
 #endif
