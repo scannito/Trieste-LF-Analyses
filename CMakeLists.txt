@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(Trieste-LF-Analyses CXX)
 
-#set(INCLUDE_ROOT "AnalysisUtils")
+set(INCLUDE_ROOT "AnalysisUtils")
 set(SRC_ROOT "LFInvMassFitter/src")
 set(ANALYSIS_STE "AnalysisSte")
 
