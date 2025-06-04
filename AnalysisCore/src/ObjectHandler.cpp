@@ -24,7 +24,7 @@
 #include "AnalysisUtils/Plot.h"
 #include "AnalysisUtils/Projections.h"
 
-#include "../include/ObjectHandler.h"
+#include "AnalysisCore/include/ObjectHandler.h"
 
 ObjectHandler::ObjectHandler() : fName("", ""), fFile(nullptr) {}
 ObjectHandler::~ObjectHandler() {
