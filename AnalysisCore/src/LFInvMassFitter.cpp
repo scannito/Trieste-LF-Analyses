@@ -19,12 +19,12 @@
 #include <vector>
 #include <string>
 
-#include "../AnalysisUtils/Parameters.h"
-#include "../AnalysisUtils/FitFunctions.h"
-#include "../AnalysisUtils/Plot.h"
-#include "../AnalysisUtils/Projections.h"
+#include "AnalysisUtils/Parameters.h"
+#include "AnalysisUtils/FitFunctions.h"
+#include "AnalysisUtils/Plot.h"
+#include "AnalysisUtils/Projections.h"
 
-#include "../include/LFInvMassFitter.h"
+#include "AnalysisCore/include/LFInvMassFitter.h"
 
 using namespace RooFit;
 

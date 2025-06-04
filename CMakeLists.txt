@@ -10,6 +10,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(ROOT REQUIRED COMPONENTS RooFit RooFitCore)
 include(${ROOT_USE_FILE})
 
+# Add subdirectories
+add_subdirectory(AnalysisUtils)
+add_subdirectory(AnalysisCore)
+add_subdirectory(AnalysisSte)
+
 # Source/include path
 set(INCLUDE_ROOT "${CMAKE_SOURCE_DIR}/AnalysisUtils")
 set(SRC_ROOT "${CMAKE_SOURCE_DIR}/AnalysisCore/src")
