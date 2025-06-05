@@ -15,7 +15,8 @@ add_subdirectory(AnalysisUtils)
 add_subdirectory(AnalysisCore)
 
 # Source/include path
-#set(ANALYSIS_UTILS "${CMAKE_SOURCE_DIR}/AnalysisUtils")
+set(ANALYSIS_UTILS "${CMAKE_SOURCE_DIR}/AnalysisUtils")
+set(ANALYSIS_CORE "${CMAKE_SOURCE_DIR}/AnalysisCore")
 set(ANALYSIS_STE "${CMAKE_SOURCE_DIR}/AnalysisSte")
 set(RAPIDJSON "${CMAKE_SOURCE_DIR}/Thirdparty/rapidjson/include")
 
@@ -26,10 +27,10 @@ configure_file(${ANALYSIS_STE}/config.json ${CMAKE_BINARY_DIR}/config.json COPYO
 add_executable(PhiK0SAnalysis ${ANALYSIS_STE}/PhiK0SAnalysis.cpp)
 
 # Include directories
-target_include_directories(PhiK0SAnalysis PRIVATE ${ANALYSIS_UTILS} ${RAPIDJSON})
+target_include_directories(PhiK0SAnalysis PRIVATE ${ANALYSIS_UTILS} ${ANALYSIS_CORE} ${RAPIDJSON})
 
 # Link both your library and ROOT to the executable
-target_link_libraries(PhiK0SAnalysis PRIVATE AnalysisCore ${ROOT_LIBRARIES})
+target_link_libraries(PhiK0SAnalysis PRIVATE LFInvMassFitter ${ROOT_LIBRARIES})
 
 # Fetch rapidjson
 #include(FetchContent)
