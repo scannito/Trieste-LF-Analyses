@@ -23,3 +23,13 @@ add_executable(PhiK0SAnalysis ${ANALYSIS_STE}/PhiK0SAnalysis.cpp)
 
 # Link both your library and ROOT to the executable
 target_link_libraries(PhiK0SAnalysis PRIVATE AnalysisCore AnalysisUtils ${ROOT_LIBRARIES})
+
+# Fetch rapidjson
+#include(FetchContent)
+#FetchContent_Declare(rapidjson GIT_REPOSITORY https://github.com/Tencent/rapidjson.git GIT_TAG master)
+#FetchContent_MakeAvailable(rapidjson)
+
+#target_link_libraries(PhiK0SAnalysis PRIVATE ${rapidjson_SOURCE_DIR}/include)
+
+# Generate compile_commands.json
+#set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

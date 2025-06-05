@@ -15,11 +15,12 @@
 #include "TGraphAsymmErrors.h"
 #include "TMultiGraph.h"
 
-/*#include "../AnalysisUtils/Parameters.h"
-#include "../AnalysisUtils/FitFunctions.h"
-#include "../AnalysisUtils/Plot.h"
-#include "../AnalysisUtils/Projections.h"*/
+/*#include "AnalysisUtils/Parameters.h"
+#include "AnalysisUtils/FitFunctions.h"
+#include "AnalysisUtils/Plot.h"
+#include "AnalysisUtils/Projections.h"*/
 
+#include "ObjectHandler.h"
 #include "LFInvMassFitter.h"
 
 int main()
