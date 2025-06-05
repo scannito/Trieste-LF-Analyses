@@ -19,8 +19,8 @@ add_subdirectory(AnalysisCore)
 set(ANALYSIS_STE "${CMAKE_SOURCE_DIR}/AnalysisSte")
 set(RAPIDJSON "${CMAKE_SOURCE_DIR}/Thirdparty/rapidjson/include")
 
-# Copy AnalysisSte directory into the build directory
-file(COPY ANALYSIS_STE DESTINATION ${CMAKE_BINARY_DIR})
+# Copy only config.json from AnlaysisSte to build directory
+configure_file(${ANALYSIS_STE}/config.json ${CMAKE_BINARY_DIR}/config.json COPYONLY)
 
 # Define the executable
 add_executable(PhiK0SAnalysis ${ANALYSIS_STE}/PhiK0SAnalysis.cpp)
