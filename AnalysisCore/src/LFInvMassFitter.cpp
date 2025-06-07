@@ -671,7 +671,6 @@ void LFInvMassFitter::fitHisto()
     legK0S2->SetHeader("pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5");
     legK0S2->AddEntry(K0S[0], "Inclusive", "p");
     legK0S2->AddEntry(K0S[1], "|#it{#Deltay}| < 0.5", "p");
-    legK0S2->AddEntry(K0S[2], "|#it{#Deltay}| < 0.1", "p");
     legK0S2->SetTextSize(0.05);
     legK0S2->SetLineWidth(0);
     legK0S2->Draw("same");
@@ -726,7 +725,6 @@ void LFInvMassFitter::fitHisto()
     legPi2->SetHeader("pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5");
     legPi2->AddEntry(Pi[0], "Inclusive", "p");
     legPi2->AddEntry(Pi[1], "|#it{#Deltay}| < 0.5", "p");
-    legPi2->AddEntry(Pi[2], "|#it{#Deltay}| < 0.1", "p");
     legPi2->SetTextSize(0.05);
     legPi2->SetLineWidth(0);
     legPi2->Draw("same");

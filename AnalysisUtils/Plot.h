@@ -22,7 +22,7 @@
 
 #include "../AnalysisUtils/Parameters.h"
 
-void PlotFeatures(TGraphAsymmErrors* graph, Style_t markstyle, Color_t markcolor, Size_t marksize, Style_t linestyle, Color_t linecolor, Width_t linewidth, Style_t fillstyle, Color_t fillcolor, Float_t alpha, TMultiGraph* mg) 
+inline void PlotFeatures(TGraphAsymmErrors* graph, Style_t markstyle, Color_t markcolor, Size_t marksize, Style_t linestyle, Color_t linecolor, Width_t linewidth, Style_t fillstyle, Color_t fillcolor, Float_t alpha, TMultiGraph* mg) 
 {													
     graph->SetMarkerStyle(markstyle);
     graph->SetMarkerColor(markcolor);
@@ -35,7 +35,7 @@ void PlotFeatures(TGraphAsymmErrors* graph, Style_t markstyle, Color_t markcolor
     mg->Add(graph);
 }
 
-std::array<TCanvas*, nbin_deltay> PlotHistograms(TH1D* h1Yield[nbin_deltay][nbin_mult], TH1D* h1YieldMB[nbin_deltay], std::string outPath, std::string name) 
+inline std::array<TCanvas*, nbin_deltay> PlotHistograms(TH1D* h1Yield[nbin_deltay][nbin_mult], TH1D* h1YieldMB[nbin_deltay], std::string outPath, std::string name) 
 {
     std::array<TCanvas*, nbin_deltay> cYield;
     TPad* topPad[nbin_deltay]; 
