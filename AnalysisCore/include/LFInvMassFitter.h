@@ -40,6 +40,8 @@
 #include "RooVoigtian.h"
 #include "RooGenericPdf.h"
 
+#include "AnalysisUtils/Parameters.h"
+
 //template <typename H, typename = std::enable_if_t<std::is_base_of_v<TH1, H>>>
 class LFInvMassFitter : public TNamed 
 {

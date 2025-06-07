@@ -21,7 +21,8 @@ set(ANALYSIS_STE "${CMAKE_SOURCE_DIR}/AnalysisSte")
 set(RAPIDJSON "${CMAKE_SOURCE_DIR}/Thirdparty/rapidjson/include")
 
 # Copy only config.json from AnlaysisSte to build directory
-configure_file(${ANALYSIS_STE}/config.json ${CMAKE_BINARY_DIR}/config.json COPYONLY)
+configure_file(${ANALYSIS_STE}/configK0S.json ${CMAKE_BINARY_DIR}/configK0S.json COPYONLY)
+configure_file(${ANALYSIS_STE}/configPi.json ${CMAKE_BINARY_DIR}/configPi.json COPYONLY)
 
 # Define the executable
 add_executable(PhiK0SAnalysis ${ANALYSIS_STE}/PhiK0SAnalysis.cpp)
