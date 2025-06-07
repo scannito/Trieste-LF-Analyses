@@ -4,10 +4,8 @@
     "eventHistDir": "dataEventHist",
     "eventHistName": "hEventSelection",
     "binEventHistName": "With at least a #phi cand",
-    "PhiK0SDir": "dataPhiK0SHist",
-    "PhiK0SInvMassHistName": "h5PhiK0SData",
-    "PhiPiDir": "dataPhiPionHist",
-    "PhiPiInvMassHistName": "h6PhiPiData",
+    "PhiAssocDir": "dataPhiK0SHist",
+    "PhiAssocInvMassHistName": "h5PhiK0SData",
     "outputPath": "results/",
     "outputFile": "ResultsData2D.root"
 }

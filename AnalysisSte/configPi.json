@@ -1,0 +1,11 @@
+{
+    "inputFile": "../AnalysisSte/data/AnalysisResultsData2D.root",
+    "analysisDir": "phik0shortanalysis",
+    "eventHistDir": "dataEventHist",
+    "eventHistName": "hEventSelection",
+    "binEventHistName": "With at least a #phi cand",
+    "PhiAssocDir": "dataPhiPionHist",
+    "PhiAssocInvMassHistName": "h6PhiPiData",
+    "outputPath": "results/",
+    "outputFile": "ResultsData2D.root"
+}

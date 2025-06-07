@@ -1,6 +1,3 @@
-#include <rapidjson/document.h>
-#include <rapidjson/filereadstream.h>
-
 #include "Riostream.h"
 #include "TFile.h"
 #include "TLegend.h"
@@ -32,84 +29,16 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    // Read JSON from file
-    const char* filename = argv[1];
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open file for reading." << std::endl;
-        return 1;
-    }
-
-    std::string jsonStr((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
-    // Parse JSON
-    rapidjson::Document document;
-    document.Parse(jsonStr.data());
-
-    if (document.HasParseError()) {
-        std::cerr << "Error parsing JSON" << std::endl;
-        return 1;
-    }
-
-    // Convert JSON to std::map
-    std::map<std::string, std::string> meta;
-    for (auto itr = document.MemberBegin(); itr != document.MemberEnd(); ++itr) {
-        meta[itr->name.GetString()] = itr->value.GetString();
-    }
-
     std::vector<std::string> requiredKeys = {"inputFile", "analysisDir", "eventHistDir", "eventHistName", "binEventHistName", 
-                                             "PhiK0SDir", "PhiK0SInvMassHistName", "PhiPiDir", "PhiPiInvMassHistName",
-                                             "outputPath", "outputFile"};
+                                             "PhiAssocDir", "PhiAssocInvMassHistName", "outputPath", "outputFile"};
 
-    bool allKeysPresent = true;
-    for (const auto& key : requiredKeys) {
-        if (meta.find(key) == meta.end()) {
-            std::cerr << "Missing required key: " << key << std::endl;
-            allKeysPresent = false;
-        }
-    }
+    ObjectHandler objectHandlerPhiK0S(argv[1], requiredKeys);
+    LFInvMassFitter PhiK0SFitter(objectHandlerPhiK0S.GetSetHisto2D(nbin_pT::K0S, "h2PhiK0SInvMass"), objectHandlerPhiK0S.GetSetHistoMultInt2D(nbin_pT::K0S, "h2PhiK0SInvMassMB"),
+                                 objectHandlerPhiK0S.GetOutPath(), objectHandlerPhiK0S.GetOutFileName());
 
-    if (!allKeysPresent) {
-        std::cerr << "Please provide all required keys in the JSON file" << std::endl;
-        return 1;
-    }
-
-    TFile* file1 = TFile::Open(meta["inputFile"].data());
-    if (!file1 || file1->IsZombie()) {
-        std::cerr << "Error opening input file: " << meta["inputFile"] << std::endl;
-        return 1;
-    }
-    TDirectoryFile* phik0shortanalysis = (TDirectoryFile*)file1->Get(meta["analysisDir"].data());
-    if (!phik0shortanalysis) {
-        std::cerr << "Error retrieving analysis directory: " << meta["analysisDir"] << std::endl;
-        return 1;
-    }
-
-    TDirectoryFile* eventHist = (TDirectoryFile*)phik0shortanalysis->Get(meta["eventHistDir"].data());
-    if (!eventHist) {
-        std::cerr << "Error retrieving event histogram directory: " << meta["eventHistDir"] << std::endl;
-        return 1;
-    }
-    std::string eventHistName = meta["eventHistName"];
-    std::string binEventHistName = meta["binEventHistName"];
-
-    TDirectoryFile* PhiK0SHist = (TDirectoryFile*)phik0shortanalysis->Get(meta["PhiK0SDir"].data());
-    if (!PhiK0SHist) {
-        std::cerr << "Error retrieving Phi K0S histogram directory: " << meta["PhiK0SDir"] << std::endl;
-        return 1;
-    }
-    std::string PhiK0SInvMassHistName = meta["PhiK0SInvMassHistName"];
-
-    TDirectoryFile* PhiPiHist = (TDirectoryFile*)phik0shortanalysis->Get(meta["PhiPiDir"].data());
-    if (!PhiPiHist) {
-        std::cerr << "Error retrieving Phi Pi histogram directory: " << meta["PhiPiDir"] << std::endl;
-        return 1;
-    }
-    std::string PhiPiInvMassHistName = meta["PhiPiInvMassHistName"];
-
-    std::string outPath = meta["outputPath"];
-    std::string outFileName = meta["outputFile"];
-
-    LFInvMassFitter PhiK0SFitter;
-
+    ObjectHandler objectHandlerPhiPi(argv[2], requiredKeys);
+    LFInvMassFitter PhiPiTPCFitter(objectHandlerPhiPi.GetSetHisto2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC"), objectHandlerPhiPi.GetSetHistoMultInt2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPCMB"),
+                                   objectHandlerPhiPi.GetOutPath(), objectHandlerPhiPi.GetOutFileName());
+    LFInvMassFitter PhiPiTOFFitter(objectHandlerPhiPi.GetSetHisto2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF"), objectHandlerPhiPi.GetSetHistoMultInt2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOFMB"),
+                                   objectHandlerPhiPi.GetOutPath(), objectHandlerPhiPi.GetOutFileName());
 }
