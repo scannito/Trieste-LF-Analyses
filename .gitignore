@@ -32,3 +32,6 @@ CMakeLists.txt.user
 
 #ROOT files
 *.root
+
+#JSON config files
+*.json
