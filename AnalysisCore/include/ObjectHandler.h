@@ -41,7 +41,7 @@ public:
 private:
     std::vector<std::string> fRequiredKeys;
 
-    THnSparse* mTHnSparse;
+    THnSparseF* mTHnSparse;
     int mNEvents;
     std::string mOutPath;
     std::string mOutFileName;

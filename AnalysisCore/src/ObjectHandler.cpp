@@ -138,35 +138,34 @@ void ObjectHandler::JSONParser(const char* filename)
         std::cerr << "Error retrieving event histogram directory: " << meta["eventHistDir"] << std::endl;
         return;
     }
-    std::string eventHistName = meta["eventHistName"];
-    std::string binEventHistName = meta["binEventHistName"];
+
+    TH1F* hEventSelection = (TH1F*)eventHist->Get(meta["eventHistName"].data());
+    hEventSelection->SetDirectory(0);
+    Int_t binNumber = hEventSelection->GetXaxis()->FindBin(meta["binEventHistName"].data());
+    Double_t nEventsPhi = hEventSelection->GetBinContent(binNumber);
 
     TDirectoryFile* PhiAssocHist = (TDirectoryFile*)phik0shortanalysis->Get(meta["PhiAssocDir"].data());
     if (!PhiAssocHist) {
         std::cerr << "Error retrieving Phi Assoc histogram directory: " << meta["PhiAssocDir"] << std::endl;
         return;
     }
-    std::string PhiAssocInvMassHistName = meta["PhiAssocInvMassHistName"];
+
+    THnSparseF* hnPhiAssoc = (THnSparseF*)PhiAssocHist->Get(meta["PhiAssocInvMassHistName"].data());
+    if (!hnPhiAssoc) {
+        std::cerr << "Error retrieving THnSparse: " << meta["PhiAssocInvMassHistName"] << std::endl;
+        return;
+    }
 
     std::string outPath = meta["outputPath"];
     std::string outFileName = meta["outputFile"];
 
-    TH1F* hEventSelection = (TH1F*)eventHist->Get(eventHistName.c_str());
-    hEventSelection->SetDirectory(0);
-    Int_t binNumber = hEventSelection->GetXaxis()->FindBin(binEventHistName.c_str());
-    Double_t nEventsPhi = hEventSelection->GetBinContent(binNumber);
-
-    THnSparse* hnPhiAssoc = (THnSparse*)PhiAssocHist->Get(PhiAssocInvMassHistName.c_str());
-    if (!mTHnSparse) {
-        std::cerr << "Error retrieving THnSparse: " << PhiAssocInvMassHistName << std::endl;
-        return;
-    }
-
-    mTHnSparse = (THnSparse*)hnPhiAssoc->Clone("hnPhiAssocClone");
+    mTHnSparse = (THnSparseF*)hnPhiAssoc->Clone("hnPhiAssocClone");
     mNEvents = nEventsPhi;
     mOutPath = outPath;
     mOutFileName = outFileName;
 
+    delete hEventSelection;
+    delete hnPhiAssoc;
     delete PhiAssocHist;
     delete eventHist;
     delete phik0shortanalysis;
