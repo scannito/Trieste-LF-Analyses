@@ -29,14 +29,16 @@ public:
     ObjectHandler(const char* filename, const std::vector<std::string>& requiredKeys);
     ~ObjectHandler();
 
-    TH2* GetHisto2D();
-    TH2* GetHistoMultInt2D();
+    //TH2* GetHisto2D();
+    //TH2* GetHistoMultInt2D();
 
-    std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> GetSetHisto2D(int nbin_pT, const std::string& hSetName);
-    std::array<std::vector<TH2*>, nbin_deltay> GetSetHistoMultInt2D(int nbin_pT, const std::string& hSetName);
+    std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> GetSetHisto2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
+    std::array<std::vector<TH2*>, nbin_deltay> GetSetHistoMultInt2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
 
     std::string GetOutPath() const { return mOutPath; }
     std::string GetOutFileName() const { return mOutFileName; }
+
+    void CheckValidMembers();
 
 private:
     std::vector<std::string> fRequiredKeys;
@@ -48,7 +50,6 @@ private:
 
     void JSONParser(const char* filename);
 
-    TH2* Project2D(Int_t axistocut, Int_t binlow, Int_t binup, Int_t axistoproj1, Int_t axistoproj2, Option_t* option = "", std::string hname = "");
-    TH2* Project2D(Int_t axistocut1, Int_t binlow1, Int_t binup1, Int_t axistocut2, Int_t binlow2, Int_t binup2, Int_t axistoproj1, Int_t axistoproj2, Option_t* option = "", std::string hname = "");
-    TH1* Project1D(Int_t axistocut1, Int_t binlow1, Int_t binup1, Int_t axistocut2, Int_t binlow2, Int_t binup2, Int_t axistocut3, Int_t binlow3, Int_t binup3, Int_t axistoproj, Option_t* option = "", std::string hname = "");
+    TH2* Project2D(const char* hname, const std::vector<std::tuple<Int_t, Int_t, Int_t>>& axistocut, const std::pair<Int_t, Int_t>& axixtoproject, Option_t* option = "");
+    TH1* Project1D(const char* hname, const std::vector<std::tuple<Int_t, Int_t, Int_t>>& axistocut, Int_t axixtoproject, Option_t* option = "");
 };

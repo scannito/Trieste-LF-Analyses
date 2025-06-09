@@ -33,7 +33,10 @@ LFInvMassFitter::LFInvMassFitter() = default;
 LFInvMassFitter::LFInvMassFitter(const std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay>& Histo2D, 
                                  const std::array<std::vector<TH2*>, nbin_deltay>& HistoMultInt2D,
                                  const std::string& OutPath, const std::string& OutFileName, int mode) : 
-                 TNamed(), mSetHisto2D(Histo2D), mSetHistoMultInt2D(HistoMultInt2D), mOutPath(OutPath), mOutFileName(OutFileName), mMode(mode) {}
+                 TNamed(), mSetHisto2D(Histo2D), mSetHistoMultInt2D(HistoMultInt2D), mOutPath(OutPath), mOutFileName(OutFileName), mMode(mode) 
+                 {
+                    std::cout << "LFInvMassFitter initialized" << std::endl;
+                 }
 LFInvMassFitter::~LFInvMassFitter()
 {
     for (auto& histo2DArray : mSetHisto2D) {

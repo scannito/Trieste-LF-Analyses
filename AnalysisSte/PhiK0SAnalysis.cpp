@@ -33,12 +33,17 @@ int main(int argc, char* argv[])
                                              "PhiAssocDir", "PhiAssocInvMassHistName", "outputPath", "outputFile"};
 
     ObjectHandler objectHandlerPhiK0S(argv[1], requiredKeys);
-    LFInvMassFitter PhiK0SFitter(objectHandlerPhiK0S.GetSetHisto2D(nbin_pT::K0S, "h2PhiK0SInvMass"), objectHandlerPhiK0S.GetSetHistoMultInt2D(nbin_pT::K0S, "h2PhiK0SInvMassMB"),
+    objectHandlerPhiK0S.CheckValidMembers();
+    std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> setHisto2D = objectHandlerPhiK0S.GetSetHisto2D(nbin_pT::K0S, "h2PhiK0SInvMass", {4, 3});
+    std::array<std::vector<TH2*>, nbin_deltay> setHistoMultInt2D = objectHandlerPhiK0S.GetSetHistoMultInt2D(nbin_pT::K0S, "h2PhiK0SInvMassMB", {4, 3});
+    std::string outPath = objectHandlerPhiK0S.GetOutPath();
+    std::string outFileName = objectHandlerPhiK0S.GetOutFileName();
+    LFInvMassFitter PhiK0SFitter(objectHandlerPhiK0S.GetSetHisto2D(nbin_pT::K0S, "h2PhiK0SInvMass", {4, 3}), objectHandlerPhiK0S.GetSetHistoMultInt2D(nbin_pT::K0S, "h2PhiK0SInvMassMB", {4, 3}),
                                  objectHandlerPhiK0S.GetOutPath(), objectHandlerPhiK0S.GetOutFileName());
 
     ObjectHandler objectHandlerPhiPi(argv[2], requiredKeys);
-    LFInvMassFitter PhiPiTPCFitter(objectHandlerPhiPi.GetSetHisto2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC"), objectHandlerPhiPi.GetSetHistoMultInt2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPCMB"),
+    LFInvMassFitter PhiPiTPCFitter(objectHandlerPhiPi.GetSetHisto2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC", {5, 3}), objectHandlerPhiPi.GetSetHistoMultInt2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPCMB", {5, 3}),
                                    objectHandlerPhiPi.GetOutPath(), objectHandlerPhiPi.GetOutFileName());
-    LFInvMassFitter PhiPiTOFFitter(objectHandlerPhiPi.GetSetHisto2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF"), objectHandlerPhiPi.GetSetHistoMultInt2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOFMB"),
+    LFInvMassFitter PhiPiTOFFitter(objectHandlerPhiPi.GetSetHisto2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF", {5, 4}), objectHandlerPhiPi.GetSetHistoMultInt2D(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOFMB", {5, 4}),
                                    objectHandlerPhiPi.GetOutPath(), objectHandlerPhiPi.GetOutFileName());
 }

@@ -28,7 +28,10 @@
 #include "AnalysisCore/include/ObjectHandler.h"
 
 ObjectHandler::ObjectHandler() = default;
-ObjectHandler::ObjectHandler(const char* filename, const std::vector<std::string>& requiredKeys) : fRequiredKeys(requiredKeys) { JSONParser(filename); }
+ObjectHandler::ObjectHandler(const char* filename, const std::vector<std::string>& requiredKeys) : fRequiredKeys(requiredKeys) 
+               { JSONParser(filename); 
+                std::cout << "ObjectHandler initialized with file: " << filename << std::endl; 
+               }
 ObjectHandler::~ObjectHandler()
 {
     if (mTHnSparse)
@@ -36,50 +39,34 @@ ObjectHandler::~ObjectHandler()
 
 }
 
-TH2* ObjectHandler::GetHisto2D()
-{
-    if (!mTHnSparse) {
-        std::cerr << "THnSparse is not initialized." << std::endl;
-        return nullptr;
-    }
-    return Project2D(0, 0, 0, 1, 2);
-}
-
-TH2* ObjectHandler::GetHistoMultInt2D()
-{
-    if (!mTHnSparse) {
-        std::cerr << "THnSparse is not initialized." << std::endl;
-        return nullptr;
-    }
-    return Project2D(0, 0, 0, 1, 2);
-}
-
-std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> ObjectHandler::GetSetHisto2D(int nbin_pT, const std::string& hSetName)
+std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> ObjectHandler::GetSetHisto2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
 {
     std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> setHisto2D;
-    for (int i = 0; i < nbin_deltay; ++i) {
+    for (int i = 1; i <= nbin_deltay; ++i) {
         for (int j = 0; j < nbin_mult; ++j) {
             std::vector<TH2*> histos;
             for (int k = 0; k < nbin_pT; ++k) {
+                std::cout << "Creating histogram for delta y bin: " << i << ", mult bin: " << j << ", pT bin: " << k << std::endl;
                 std::string hName = hSetName + "_" + std::to_string(i) + "_" + std::to_string(j) + "_" + std::to_string(k);
-                histos.push_back(Project2D(0, j + 1, j + 1, 1, k + 1, k + 1, 3, 2, "", hName));
+                histos.push_back(Project2D(hName.data(), {{0, i+1, i+1}, {1, j+1, j+1}, {2, k+1, k+1}}, axixtoproject));
             }
-            setHisto2D[i][j] = histos;
+            setHisto2D[i-1][j] = histos;
         }
     }
     return setHisto2D;
 }
 
-std::array<std::vector<TH2*>, nbin_deltay> ObjectHandler::GetSetHistoMultInt2D(int nbin_pT, const std::string& hSetName)
+std::array<std::vector<TH2*>, nbin_deltay> ObjectHandler::GetSetHistoMultInt2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
 {
     std::array<std::vector<TH2*>, nbin_deltay> setHistoMultInt2D;
-    for (int i = 0; i < nbin_deltay; ++i) {
+    for (int i = 1; i <= nbin_deltay; ++i) {
         std::vector<TH2*> histos;
         for (int k = 0; k < nbin_pT; ++k) {
+            std::cout << "Creating histogram for delta y bin: " << i << ", pT bin: " << k << std::endl;
             std::string hName = hSetName + "_" + std::to_string(i) + "_" + std::to_string(k);
-            histos.push_back(Project2D(0, 1, nbin_mult, 1, k+1, k+1, 3, 2, "", hName));
+            histos.push_back(Project2D(hName.data(), {{0, i+1, i+1}, {1, 1, nbin_mult}, {2, k+1, k+1}}, axixtoproject));
         }
-        setHistoMultInt2D[i] = histos;
+        setHistoMultInt2D[i-1] = histos;
     }
     return setHistoMultInt2D;
 }
@@ -172,31 +159,52 @@ void ObjectHandler::JSONParser(const char* filename)
     file1->Close();
 }
 
-TH2* ObjectHandler::Project2D(Int_t axistocut, Int_t binlow, Int_t binup, Int_t axistoproj1, Int_t axistoproj2, Option_t* option, std::string hname) 
+
+TH2* ObjectHandler::Project2D(const char* hname, const std::vector<std::tuple<Int_t, Int_t, Int_t>>& axistocut, const std::pair<Int_t, Int_t>& axixtoproject, Option_t* option) 
 { 
-    mTHnSparse->GetAxis(axistocut)->SetRange(binlow, binup);
-    TH2* h2 = (TH2*)mTHnSparse->Projection(axistoproj1, axistoproj2, option);
-    h2->SetName(hname.data());
+    for (const auto [naxis, binlow, binup] : axistocut)
+        mTHnSparse->GetAxis(naxis)->SetRange(binlow, binup);
+
+    TH2* h2 = (TH2*)mTHnSparse->Projection(axixtoproject.first, axixtoproject.second, option);
+    h2->SetName(hname);
     h2->SetDirectory(0);
     return h2;
 }
 
-TH2* ObjectHandler::Project2D(Int_t axistocut1, Int_t binlow1, Int_t binup1, Int_t axistocut2, Int_t binlow2, Int_t binup2, Int_t axistoproj1, Int_t axistoproj2, Option_t* option, std::string hname) 
+TH1* ObjectHandler::Project1D(const char* hname, const std::vector<std::tuple<Int_t, Int_t, Int_t>>& axistocut, Int_t axixtoproject, Option_t* option) 
 { 
-    mTHnSparse->GetAxis(axistocut1)->SetRange(binlow1, binup1);
-    mTHnSparse->GetAxis(axistocut2)->SetRange(binlow2, binup2);
-    TH2* h2 = (TH2*)mTHnSparse->Projection(axistoproj1, axistoproj2, option);
-    h2->SetName(hname.data());
+    for (const auto [naxis, binlow, binup] : axistocut)
+        mTHnSparse->GetAxis(naxis)->SetRange(binlow, binup);
+
+    TH2* h2 = (TH2*)mTHnSparse->Projection(axixtoproject, option);
+    h2->SetName(hname);
     h2->SetDirectory(0);
     return h2;
 }
-TH1* ObjectHandler::Project1D(Int_t axistocut1, Int_t binlow1, Int_t binup1, Int_t axistocut2, Int_t binlow2, Int_t binup2, Int_t axistocut3, Int_t binlow3, Int_t binup3, Int_t axistoproj, Option_t* option, std::string hname) 
-{ 
-    mTHnSparse->GetAxis(axistocut1)->SetRange(binlow1, binup1);
-    mTHnSparse->GetAxis(axistocut2)->SetRange(binlow2, binup2);
-    mTHnSparse->GetAxis(axistocut3)->SetRange(binlow3, binup3);
-    TH1* h1 = (TH1*)mTHnSparse->Projection(axistoproj, option);
-    h1->SetName(hname.data());
-    h1->SetDirectory(0);
-    return h1;
+
+void ObjectHandler::CheckValidMembers()
+{
+    if (!mTHnSparse) {
+        std::cerr << "Error: mTHnSparse is not initialized." << std::endl;
+    } else {
+        std::cout << "mTHnSparse is valid." << std::endl;
+    
+    if (mNEvents <= 0) {
+        std::cerr << "Error: mNEvents is not set or invalid." << std::endl;
+    } else {
+        std::cout << "mNEvents is valid: " << mNEvents << std::endl;
+    }
+
+    if (mOutPath.empty()) {
+        std::cerr << "Error: mOutPath is not set." << std::endl;
+    } else {
+        std::cout << "mOutPath is valid: " << mOutPath << std::endl;
+    }
+
+    if (mOutFileName.empty()) {
+        std::cerr << "Error: mOutFileName is not set." << std::endl;
+    } else {
+        std::cout << "mOutFileName is valid: " << mOutFileName << std::endl;
+    }
+    }
 }
