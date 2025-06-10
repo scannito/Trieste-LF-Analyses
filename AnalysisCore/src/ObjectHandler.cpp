@@ -27,11 +27,14 @@
 
 #include "AnalysisCore/include/ObjectHandler.h"
 
-ObjectHandler::ObjectHandler() = default;
+
 ObjectHandler::ObjectHandler(const char* filename, const std::vector<std::string>& requiredKeys) : fRequiredKeys(requiredKeys) 
-               { JSONParser(filename); 
-                std::cout << "ObjectHandler initialized with file: " << filename << std::endl; 
-               }
+{ 
+    std::map<std::string, std::string> meta;
+    ReadFromJSON(meta, filename);
+    ObjectAcquisition(meta);
+    std::cout << "ObjectHandler initialized with file: " << filename << std::endl; 
+}
 ObjectHandler::~ObjectHandler()
 {
     if (mTHnSparse)
@@ -39,7 +42,7 @@ ObjectHandler::~ObjectHandler()
 
 }
 
-std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> ObjectHandler::GetSetHisto2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
+/*std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> ObjectHandler::GetSetHisto2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
 {
     std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> setHisto2D;
     for (int i = 1; i <= nbin_deltay; ++i) {
@@ -69,9 +72,33 @@ std::array<std::vector<TH2*>, nbin_deltay> ObjectHandler::GetSetHistoMultInt2D(i
         setHistoMultInt2D[i-1] = histos;
     }
     return setHistoMultInt2D;
+}*/
+
+void ObjectHandler::ExportProjections(const char* filename, int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
+{
+    std::map<std::string, std::string> meta;
+    TFile* file = TFile::Open(filename, "RECREATE");
+    if (!file || file->IsZombie()) {
+        std::cerr << "Error opening output file: " << filename << std::endl;
+        return;
+    }
+
+    for (int i = 1; i <= nbin_deltay; ++i) {
+        for (int j = 0; j < nbin_mult; ++j) {
+            for (int k = 0; k < nbin_pT; ++k) {
+                std::cout << "Writing histogram for delta y bin: " << i << ", mult bin: " << j << ", pT bin: " << k << std::endl;
+                std::string hName = hSetName + "_" + std::to_string(i) + "_" + std::to_string(j) + "_" + std::to_string(k);
+                TH2* h2 = Project2D(hName.data(), {{0, i+1, i+1}, {1, j+1, j+1}, {2, k+1, k+1}}, axixtoproject);
+                h2->Write();
+                delete h2;
+            }
+        }
+    }
+
+    file->Close();
 }
 
-void ObjectHandler::JSONParser(const char* filename)
+void ObjectHandler::ReadFromJSON(std::map<std::string, std::string>& meta, const char* filename)
 {
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -91,7 +118,6 @@ void ObjectHandler::JSONParser(const char* filename)
     }
 
     // Convert JSON to std::map
-    std::map<std::string, std::string> meta;
     for (auto itr = document.MemberBegin(); itr != document.MemberEnd(); ++itr) {
         meta[itr->name.GetString()] = itr->value.GetString();
     }
@@ -106,9 +132,11 @@ void ObjectHandler::JSONParser(const char* filename)
 
     if (!allKeysPresent) {
         std::cerr << "Please provide all required keys in the JSON file" << std::endl;
-        return;
     }
+}
 
+void ObjectHandler::ObjectAcquisition(std::map<std::string, std::string>& meta)
+{
     TFile* file1 = TFile::Open(meta["inputFile"].data());
     if (!file1 || file1->IsZombie()) {
         std::cerr << "Error opening input file: " << meta["inputFile"] << std::endl;
@@ -158,7 +186,6 @@ void ObjectHandler::JSONParser(const char* filename)
     delete phik0shortanalysis;
     file1->Close();
 }
-
 
 TH2* ObjectHandler::Project2D(const char* hname, const std::vector<std::tuple<Int_t, Int_t, Int_t>>& axistocut, const std::pair<Int_t, Int_t>& axixtoproject, Option_t* option) 
 { 

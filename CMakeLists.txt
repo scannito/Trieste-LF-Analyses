@@ -25,13 +25,16 @@ configure_file(${ANALYSIS_STE}/configK0S.json ${CMAKE_BINARY_DIR}/configK0S.json
 configure_file(${ANALYSIS_STE}/configPi.json ${CMAKE_BINARY_DIR}/configPi.json COPYONLY)
 
 # Define the executable
-add_executable(PhiK0SAnalysis ${ANALYSIS_STE}/PhiK0SAnalysis.cpp ${ANALYSIS_CORE}/src/ObjectHandler.cpp ${ANALYSIS_CORE}/src/LFInvMassFitter.cpp)
+add_executable(PhiK0SAnalysis1 ${ANALYSIS_STE}/PhiK0SAnalysis1.cpp ${ANALYSIS_CORE}/src/ObjectHandler.cpp)
+add_executable(PhiK0SAnalysis2 ${ANALYSIS_STE}/PhiK0SAnalysis2.cpp ${ANALYSIS_CORE}/src/ObjectHandler.cpp ${ANALYSIS_CORE}/src/LFInvMassFitter.cpp)
 
 # Include directories
-target_include_directories(PhiK0SAnalysis PRIVATE ${ANALYSIS_CORE} ${RAPIDJSON})
+target_include_directories(PhiK0SAnalysis1 PRIVATE ${ANALYSIS_CORE} ${RAPIDJSON})
+target_include_directories(PhiK0SAnalysis2 PRIVATE ${ANALYSIS_CORE} ${RAPIDJSON})
 
 # Link both your library and ROOT to the executable
-target_link_libraries(PhiK0SAnalysis PRIVATE LFInvMassFitter ${ROOT_LIBRARIES})
+target_link_libraries(PhiK0SAnalysis1 PRIVATE LFInvMassFitter ${ROOT_LIBRARIES})
+target_link_libraries(PhiK0SAnalysis2 PRIVATE LFInvMassFitter ${ROOT_LIBRARIES})
 
 # Fetch rapidjson
 #include(FetchContent)

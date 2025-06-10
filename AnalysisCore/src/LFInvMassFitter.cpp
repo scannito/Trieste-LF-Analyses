@@ -29,26 +29,55 @@ using namespace RooFit;
 
 ClassImp(LFInvMassFitter);
 
-LFInvMassFitter::LFInvMassFitter() = default;
 LFInvMassFitter::LFInvMassFitter(const std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay>& Histo2D, 
-                                 const std::array<std::vector<TH2*>, nbin_deltay>& HistoMultInt2D,
+                                 /*const std::array<std::vector<TH2*>, nbin_deltay>& HistoMultInt2D,*/
                                  const std::string& OutPath, const std::string& OutFileName, int mode) : 
-                 TNamed(), mSetHisto2D(Histo2D), mSetHistoMultInt2D(HistoMultInt2D), mOutPath(OutPath), mOutFileName(OutFileName), mMode(mode) 
-                 {
-                    std::cout << "LFInvMassFitter initialized" << std::endl;
-                 }
+                                 TNamed(), mSetHisto2D(Histo2D), /*mSetHistoMultInt2D(HistoMultInt2D),*/ 
+                                 mOutPath(OutPath), mOutFileName(OutFileName), mMode(mode) 
+{
+    std::cout << "LFInvMassFitter initialized" << std::endl;
+}
+LFInvMassFitter::LFInvMassFitter(const char* filename, int nbin_pT, const std::string& histoname) : TNamed()
+{
+    HistogramAcquisition(filename, nbin_pT, histoname);
+    std::cout << "LFInvMassFitter initialized" << std::endl;
+}
 LFInvMassFitter::~LFInvMassFitter()
 {
     for (auto& histo2DArray : mSetHisto2D) {
         for (auto& histo2D : histo2DArray) {
             for (auto& histo : histo2D) {
-                if (histo) delete histo;
+                if (histo) 
+                    delete histo;
             }
         }
     }
-    for (auto& histoMultInt : mSetHistoMultInt2D) {
+    /*for (auto& histoMultInt : mSetHistoMultInt2D) {
         for (auto& histo : histoMultInt) {
-            if (histo) delete histo;
+            if (histo) 
+                delete histo;
+        }
+    }*/
+}
+
+void LFInvMassFitter::HistogramAcquisition(const char* filename, int nbin_pT, const std::string& histoname)
+{
+    TFile* file = TFile::Open(filename);
+    if (!file || !file->IsOpen()) {
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return;
+    }
+
+    std::cout << "Acquiring histograms from file: " << filename << std::endl;
+
+    for (int i = 1; i <= nbin_deltay; ++i) {
+        for (int j = 0; j < nbin_mult; ++j) {
+            std::vector<TH2*> histos;
+            for (int k = 0; k < nbin_pT; ++k) {
+                std::string hName = histoname + "_" + std::to_string(i) + "_" + std::to_string(j) + "_" + std::to_string(k);
+                histos.push_back(static_cast<TH2*>(file->Get(hName.data())));
+            }
+            mSetHisto2D[i-1][j] = histos;
         }
     }
 }
@@ -572,7 +601,7 @@ void LFInvMassFitter::fitHisto()
 
     //********************************************************************************************
 
-    for (int i = 0; i < nbin_deltay; i++) {
+    /*for (int i = 0; i < nbin_deltay; i++) {
         h1PhiK0SYieldMB[i] = new TH1D(Form("h1PhiK0SYieldMB%i", i), Form("h1PhiK0SYieldMB%i", i), nbin_pT::K0S, pTK0S_axis.data());
 
         h1PhiPiTPCYieldMB[i] = new TH1D(Form("h1PhiPiTPCYieldMB%i", i), Form("h1PhiPiTPCYieldMB%i", i), nbin_pT::Pi, pTPi_axis.data());
@@ -580,11 +609,6 @@ void LFInvMassFitter::fitHisto()
         h1PhiPiYieldMB[i] = new TH1D(Form("h1PhiPiYieldMB%i", i), Form("h1PhiPiYieldMB%i", i), nbin_pT::Pi, pTPi_axis.data());
 
         for (int k = 0; k < nbin_pT::K0S; k++) {
-
-            //if (i != 0 || k != 1) continue;
-            //if (i != 2) continue;
-            //continue;
-
             std::tie(PhiK0SYieldpTdiffMB[i][k], errPhiK0SYieldpTdiffMB[i][k]) = FitPhiK0S(mSetHistoMultInt2D[i][k], {i, k}, fileCanvasK0S);
             PhiK0SYieldpTdiffMB[i][k] = PhiK0SYieldpTdiffMB[i][k] / deltay_axis[i] / (pTK0S_axis[k+1] - pTK0S_axis[k]) / mNEvents;
             errPhiK0SYieldpTdiffMB[i][k] = errPhiK0SYieldpTdiffMB[i][k] / deltay_axis[i] / (pTK0S_axis[k+1] - pTK0S_axis[k]) / mNEvents;
@@ -594,10 +618,6 @@ void LFInvMassFitter::fitHisto()
         }
 
         for (int k = 0; k < nbin_pT::Pi; k++) {
-            //if (i != 0 || k != 0) continue;
-            //if (i != 0) continue;
-            //continue;
-
             std::tie(PhiPiTPCYieldpTdiffMB[i][k], errPhiPiTPCYieldpTdiffMB[i][k]) = FitPhiPi(mSetHistoMultInt2D[i][k], {i, k}, 0, mMode-2, fileCanvasPiTPC);
             PhiPiTPCYieldpTdiffMB[i][k] = PhiPiTPCYieldpTdiffMB[i][k] / deltay_axis[i] / (pTPi_axis[k+1] - pTPi_axis[k]) / mNEvents;
             errPhiPiTPCYieldpTdiffMB[i][k] = errPhiPiTPCYieldpTdiffMB[i][k] / deltay_axis[i] / (pTPi_axis[k+1] - pTPi_axis[k]) / mNEvents;
@@ -620,7 +640,7 @@ void LFInvMassFitter::fitHisto()
             h1PhiPiYieldMB[i]->SetBinContent(k+1, PhiPiYieldpTdiffMB[i][k]);
             h1PhiPiYieldMB[i]->SetBinError(k+1, errPhiPiYieldpTdiffMB[i][k]);
         }
-    }
+    }*/
 
     //********************************************************************************************
 

@@ -46,10 +46,11 @@
 class LFInvMassFitter : public TNamed 
 {
     public:
-        LFInvMassFitter();
+        LFInvMassFitter() = default;
         LFInvMassFitter(const std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay>& Histo2D, 
-                        const std::array<std::vector<TH2*>, nbin_deltay>& HistoMultInt2D,
+                        /*const std::array<std::vector<TH2*>, nbin_deltay>& HistoMultInt2D,*/
                         const std::string& OutPath, const std::string& OutFileName, int mode = 0);
+        LFInvMassFitter(const char* filename, int nbin_pT, const std::string& histoname);
         ~LFInvMassFitter();
 
         std::pair<Double_t, Double_t> GetPhiPurityAndError(TH1* h1PhiInvMass, std::string nameCanvas, Int_t isDataOrReco, Int_t isK0SOrPi, std::vector<Int_t> indices, bool printCanvas = false);
@@ -67,13 +68,15 @@ class LFInvMassFitter : public TNamed
     private:
         //H* mHisto;
         std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> mSetHisto2D{};
-        std::array<std::vector<TH2*>, nbin_deltay> mSetHistoMultInt2D{};
+        //std::array<std::vector<TH2*>, nbin_deltay> mSetHistoMultInt2D{};
 
         std::string mOutPath;
         std::string mOutFileName;
 
         int mNEvents{0}; // Number of processed events
         int mMode{0}; // 0: Data, 1: MC, 2: Closure test
+
+        void HistogramAcquisition(const char* filename, int nbin_pT, const std::string& histoname);
 
     ClassDef(LFInvMassFitter, 1);
 };
