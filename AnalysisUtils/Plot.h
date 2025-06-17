@@ -20,9 +20,24 @@
 #include <array>
 #include <string>
 
-#include "../AnalysisUtils/Parameters.h"
+#include "AnalysisUtils/Parameters.h"
 
-inline void PlotFeatures(TGraphAsymmErrors* graph, Style_t markstyle, Color_t markcolor, Size_t marksize, Style_t linestyle, Color_t linecolor, Width_t linewidth, Style_t fillstyle, Color_t fillcolor, Float_t alpha, TMultiGraph* mg) 
+inline void SetHistoStyle(TH1* h1, Color_t color)
+{
+    h1->SetMarkerStyle(20);
+    h1->SetMarkerColor(color);
+    h1->SetMarkerSize(1.5);
+    h1->SetLineColor(color);
+    h1->SetLineWidth(2);
+    h1->SetFillStyle(3001);
+    h1->SetFillColor(color);
+    h1->GetYaxis()->SetRangeUser(0.0, 1.2 * h1->GetMaximum());
+    h1->GetYaxis()->SetTitleSize(0.045);
+    h1->GetYaxis()->SetTitleOffset(1.0);
+    h1->GetYaxis()->SetLabelSize(0.045);
+}
+
+inline void SetGraphStyle(TGraphAsymmErrors* graph, Style_t markstyle, Color_t markcolor, Size_t marksize, Style_t linestyle, Color_t linecolor, Width_t linewidth, Style_t fillstyle, Color_t fillcolor, Float_t alpha, TMultiGraph* mg) 
 {													
     graph->SetMarkerStyle(markstyle);
     graph->SetMarkerColor(markcolor);

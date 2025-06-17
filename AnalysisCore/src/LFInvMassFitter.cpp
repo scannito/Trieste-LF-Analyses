@@ -79,7 +79,6 @@ LFInvMassFitter::AssocParticleType LFInvMassFitter::StringToAssoc(const std::str
     };
 
     std::string key(assoc);
-    //std::transform(key.begin(), key.end(), key.begin(), ::tolower);
 
     auto it = map.find(key);
     return it != map.end() ? it->second : AssocParticleType::Unknown;
@@ -106,7 +105,6 @@ void LFInvMassFitter::HistogramAcquisition(const char* filename, int nbin_pT, co
 
     for (int i = 1; i <= nbin_deltay; ++i) {
         for (int j = 0; j < nbin_mult; ++j) {
-            //std::vector<TH2*> histos;
             for (int k = 0; k < nbin_pT; ++k) {
                 std::string hName = histoname + "_" + std::to_string(i) + "_" + std::to_string(j) + "_" + std::to_string(k);
                 TH2* htemp = (TH2*)file->Get(hName.data());
@@ -575,6 +573,8 @@ void LFInvMassFitter::ExportYields(const char* filename, Int_t nbin_pT, const st
                 h1PhiAssocYield->SetBinContent(k + 1, PhiAssocYieldpTdiff);
                 h1PhiAssocYield->SetBinError(k + 1, errPhiAssocYieldpTdiff);
             }
+
+            SetHistoStyle(h1PhiAssocYield, Colors[j]);
 
             outputFile->cd();
             h1PhiAssocYield->Write();
