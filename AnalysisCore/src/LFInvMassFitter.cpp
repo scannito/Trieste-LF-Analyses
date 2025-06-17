@@ -29,19 +29,30 @@ using namespace RooFit;
 
 ClassImp(LFInvMassFitter);
 
-LFInvMassFitter::LFInvMassFitter(const std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay>& Histo2D, 
+LFInvMassFitter::LFInvMassFitter(const std::string& assoc, const std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay>& Histo2D, 
                                  /*const std::array<std::vector<TH2*>, nbin_deltay>& HistoMultInt2D,*/
                                  const std::string& OutPath, const std::string& OutFileName, int mode) : 
-                                 TNamed(), mSetHisto2D(Histo2D), /*mSetHistoMultInt2D(HistoMultInt2D),*/ 
-                                 mOutPath(OutPath), mOutFileName(OutFileName), mMode(mode) 
+                                 TNamed(), mAssocParticleType(StringToAssoc(assoc)), mSetHisto2D(Histo2D), /*mSetHistoMultInt2D(HistoMultInt2D),*/ 
+                                 /*mOutPath(OutPath), mOutFileName(OutFileName),*/ mMode(mode)
 {
-    std::cout << "LFInvMassFitter initialized" << std::endl;
+    std::cout << "LFInvMassFitter initialized for associated particle = " << mAssocParticleType << std::endl;
+    if (mAssocParticleType == Unknown) {
+        std::cerr << "Error: Unknown associated particle type. Please check the input." << std::endl;
+        return;
+    }
 }
-LFInvMassFitter::LFInvMassFitter(const char* filename, int nbin_pT, const std::string& histoname) : TNamed()
+
+LFInvMassFitter::LFInvMassFitter(const std::string& assoc, const char* filename, int nbin_pT, const std::string& histoname) : 
+                                 TNamed(), mAssocParticleType(StringToAssoc(assoc))
 {
+    std::cout << "LFInvMassFitter initialized for associated particle = " << mAssocParticleType << std::endl;
     HistogramAcquisition(filename, nbin_pT, histoname);
-    std::cout << "LFInvMassFitter initialized" << std::endl;
+    if (mAssocParticleType == Unknown) {
+        std::cerr << "Error: Unknown associated particle type. Please check the input." << std::endl;
+        return;
+    }
 }
+
 LFInvMassFitter::~LFInvMassFitter()
 {
     for (auto& histo2DArray : mSetHisto2D) {
@@ -60,6 +71,29 @@ LFInvMassFitter::~LFInvMassFitter()
     }*/
 }
 
+LFInvMassFitter::AssocParticleType LFInvMassFitter::StringToAssoc(const std::string& assoc) 
+{
+    std::map<std::string, AssocParticleType> map = {
+        {"K0S", K0S},
+        {"Pi", Pi}
+    };
+
+    std::string key(assoc);
+    //std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+
+    auto it = map.find(key);
+    return it != map.end() ? it->second : AssocParticleType::Unknown;
+}
+
+std::string LFInvMassFitter::AssocToSymbol(AssocParticleType assoc) 
+{
+    switch (assoc) {
+        case K0S: return "K^{0}_{S}";
+        case Pi: return "#pi";
+        default: return "Unknown";
+    }
+}
+
 void LFInvMassFitter::HistogramAcquisition(const char* filename, int nbin_pT, const std::string& histoname)
 {
     TFile* file = TFile::Open(filename);
@@ -72,17 +106,21 @@ void LFInvMassFitter::HistogramAcquisition(const char* filename, int nbin_pT, co
 
     for (int i = 1; i <= nbin_deltay; ++i) {
         for (int j = 0; j < nbin_mult; ++j) {
-            std::vector<TH2*> histos;
+            //std::vector<TH2*> histos;
             for (int k = 0; k < nbin_pT; ++k) {
                 std::string hName = histoname + "_" + std::to_string(i) + "_" + std::to_string(j) + "_" + std::to_string(k);
-                histos.push_back(static_cast<TH2*>(file->Get(hName.data())));
+                TH2* htemp = (TH2*)file->Get(hName.data());
+                htemp->SetDirectory(0);
+                mSetHisto2D[i-1][j].push_back(htemp);
             }
-            mSetHisto2D[i-1][j] = histos;
         }
     }
+
+    file->Close();
 }
 
-std::pair<Double_t, Double_t> LFInvMassFitter::GetPhiPurityAndError(TH1* h1PhiInvMass, std::string nameCanvas, Int_t isDataOrReco, Int_t isK0SOrPi, std::vector<Int_t> indices, bool printCanvas)
+std::pair<Double_t, Double_t> LFInvMassFitter::GetPhiPurityAndError(TH1* h1PhiInvMass, std::string nameCanvas, Int_t isDataOrReco, 
+                                                                    Int_t isK0SOrPi, std::vector<Int_t> indices, bool printCanvas)
 {
     h1PhiInvMass->SetTitle("; #it{M}(K^{+}K^{#minus}) (GeV/#it{c}^{2}); Counts");
     Double_t binsize = h1PhiInvMass->GetXaxis()->GetBinWidth(1);
@@ -374,7 +412,7 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiPi(TH2* h2PhiPiInvMass, std
 
     //RooAddPdf model("model", "model", RooArgList(sig1, sig2), RooArgList(nsig1, nsig2));
     RooAddPdf* model;//("model", "model", RooArgList(dsCrystalBall, gauss), RooArgList(nsig1, nsig2));
-    if (isDataOrMcReco == 1) {
+    if (isDataOrMcReco == 0) {
         if (isTPCOrTOF == 0) {
             if (indices.size() == 2) {
                 if (indices[1] < 6) model = new RooAddPdf("model", "model", RooArgList(sigsig, missig2sig, sigbkg, missig2bkg), RooArgList(nsigsig, nmissig2sig, nsigbkg, nmissig2bkg));
@@ -399,7 +437,7 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiPi(TH2* h2PhiPiInvMass, std
                 if (indices[0] == 2 && indices[1] == 9 && (indices[2] == 4 || indices[2] == 5)) model = new RooAddPdf("model", "model", RooArgList(sigsig, missig2sig, sigbkg, missig2bkg), RooArgList(nsigsig, nmissig2sig, nsigbkg, nmissig2bkg));
             }
         }
-    } else if (isDataOrMcReco == 2) {
+    } else if (isDataOrMcReco == 1) {
         if (isTPCOrTOF == 0) {
             if (indices.size() == 2) {
                 if (indices[1] < 6) model = new RooAddPdf("model", "model", RooArgList(sigsig, missig2sig, sigbkg, missig2bkg), RooArgList(nsigsig, nmissig2sig, nsigbkg, nmissig2bkg));
@@ -501,279 +539,64 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiPi(TH2* h2PhiPiInvMass, std
     return std::make_pair(PhiPiYieldpTdiff, errPhiPiYieldpTdiff);
 }
 
-void LFInvMassFitter::fitHisto() 
+std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiAssoc(TH2* h2PhiAssocInvMass, std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, TFile* file/*,
+                                                           const std::vector<Double_t>& params, const std::vector<Double_t>& lowLimits, const std::vector<Double_t>& upLimits*/)
 {
-    //********************************************************************************************
-    // Signal extraction
-    //********************************************************************************************
+    switch (mAssocParticleType) {
+        case K0S: // K0S
+            return FitPhiK0S(h2PhiAssocInvMass, indices, file/*, params, lowLimits, upLimits*/);
+        case Pi: // Pi
+            return FitPhiPi(h2PhiAssocInvMass, indices, isTPCOrTOF, isDataOrMcReco, file/*, params, lowLimits, upLimits*/);
+        default:
+            throw std::invalid_argument("Invalid association type specified.");
+    }
+}
 
-    Double_t PhiK0SYieldpTdiff[nbin_deltay][nbin_mult][nbin_pT::K0S] = {0}, errPhiK0SYieldpTdiff[nbin_deltay][nbin_mult][nbin_pT::K0S] = {0};
-    TH1D* h1PhiK0SYield[nbin_deltay][nbin_mult];
-
-    Double_t PhiK0SYieldpTdiffMB[nbin_deltay][nbin_pT::K0S] = {0}, errPhiK0SYieldpTdiffMB[nbin_deltay][nbin_pT::K0S] = {0};
-    TH1D* h1PhiK0SYieldMB[nbin_deltay];
+void LFInvMassFitter::ExportYields(const char* filename, Int_t nbin_pT, const std::vector<Double_t>& pT_axis, const std::string& hSetName, Int_t isTPCOrTOF) 
+{
+    TFile* outputFile = TFile::Open(filename, "RECREATE");
+    if (!outputFile || outputFile->IsZombie()) {
+        std::cerr << "Error opening output file: " << filename << std::endl;
+        return;
+    }
     
-    Double_t PhiPiTPCYieldpTdiff[nbin_deltay][nbin_mult][nbin_pT::Pi] = {0}, errPhiPiTPCYieldpTdiff[nbin_deltay][nbin_mult][nbin_pT::Pi] = {0};
-    TH1D* h1PhiPiTPCYield[nbin_deltay][nbin_mult];
-
-    Double_t PhiPiTOFYieldpTdiff[nbin_deltay][nbin_mult][nbin_pT::Pi] = {0}, errPhiPiTOFYieldpTdiff[nbin_deltay][nbin_mult][nbin_pT::Pi] = {0};
-    TH1D* h1PhiPiTOFYield[nbin_deltay][nbin_mult];
-
-    Double_t PhiPiYieldpTdiff[nbin_deltay][nbin_mult][nbin_pT::Pi] = {0}, errPhiPiYieldpTdiff[nbin_deltay][nbin_mult][nbin_pT::Pi] = {0};
-    TH1D* h1PhiPiYield[nbin_deltay][nbin_mult];
-
-    Double_t PhiPiTPCYieldpTdiffMB[nbin_deltay][nbin_pT::Pi] = {0}, errPhiPiTPCYieldpTdiffMB[nbin_deltay][nbin_pT::Pi] = {0};
-    TH1D* h1PhiPiTPCYieldMB[nbin_deltay];
-
-    Double_t PhiPiTOFYieldpTdiffMB[nbin_deltay][nbin_pT::Pi] = {0}, errPhiPiTOFYieldpTdiffMB[nbin_deltay][nbin_pT::Pi] = {0};
-    TH1D* h1PhiPiTOFYieldMB[nbin_deltay];
-
-    Double_t PhiPiYieldpTdiffMB[nbin_deltay][nbin_pT::Pi] = {0}, errPhiPiYieldpTdiffMB[nbin_deltay][nbin_pT::Pi] = {0};
-    TH1D* h1PhiPiYieldMB[nbin_deltay];
-
-    //********************************************************************************************
-
-    std::string outNameCanvasK0S = mOutPath + "fitCanvasK0S2D.root";
-    TFile* fileCanvasK0S = new TFile(outNameCanvasK0S.c_str(), "RECREATE");
-
-    std::string outNameCanvasPiTPC = mOutPath + "fitCanvasPiTPC2D.root";
-    TFile* fileCanvasPiTPC = new TFile(outNameCanvasPiTPC.c_str(), "RECREATE");
-
-    std::string outNameCanvasPiTOF = mOutPath + "fitCanvasPiTOF2D.root";
-    TFile* fileCanvasPiTOF = new TFile(outNameCanvasPiTOF.c_str(), "RECREATE");
-
     for (int i = 0; i < nbin_deltay; i++) {
         for (int j = 0; j < nbin_mult; j++) {
-            h1PhiK0SYield[i][j] = new TH1D(Form("h1PhiK0SYield%i_%i", i, j), Form("h1PhiK0SYield%i_%i", i, j), nbin_pT::K0S, pTK0S_axis.data());
-            h1PhiK0SYield[i][j]->SetTitle("; ; 1/N_{ev,#phi} d^{2}N_{K^{0}_{S}}/d#it{y}d#it{p}_{T} [(GeV/#it{c})^{-1}]");
+            std::string hName = hSetName + "_" + std::to_string(i) + "_" + std::to_string(j);
+            TH1* h1PhiAssocYield = new TH1D(hName.data(), hName.data(), nbin_pT, pT_axis.data());       
+            h1PhiAssocYield->SetTitle(Form("; #it{p}_{T} (GeV/#it{c}); 1/N_{ev,#phi} d^{2}N_{%s}/d#it{y}d#it{p}_{T} [(GeV/#it{c})^{-1}]", AssocToSymbol(mAssocParticleType).data()));
 
-            h1PhiPiTPCYield[i][j] = new TH1D(Form("h1PhiPiTPCYield%i_%i", i, j), Form("h1PhiPiTPCYield%i_%i", i, j), nbin_pT::Pi, pTPi_axis.data());
-            h1PhiPiTPCYield[i][j]->SetTitle("; ; 1/N_{ev,#phi} d^{2}N_{(#pi^{+}+#pi^{#minus})}/d#it{y}d#it{p}_{T} [(GeV/#it{c})^{-1}]");
+            for (int k = 0; k < nbin_pT; k++) {
+                std::cout << "Processing bin: " << i << ", " << j << ", " << k << std::endl;
+                auto [PhiAssocYieldpTdiff, errPhiAssocYieldpTdiff] = FitPhiAssoc(mSetHisto2D[i][j][k], {i, j, k}, isTPCOrTOF, mMode, outputFile);
+                PhiAssocYieldpTdiff /= deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pT_axis[k+1] - pT_axis[k]) /*/ mNEvents*/;
+                errPhiAssocYieldpTdiff /= deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pT_axis[k+1] - pT_axis[k]) /*/ mNEvents*/;
 
-            h1PhiPiTOFYield[i][j] = new TH1D(Form("h1PhiPiTOFYield%i_%i", i, j), Form("h1PhiPiTOFYield%i_%i", i, j), nbin_pT::Pi, pTPi_axis.data());
-            h1PhiPiTOFYield[i][j]->SetTitle("; ; 1/N_{ev,#phi} d^{2}N_{(#pi^{+}+#pi^{#minus})}/d#it{y}d#it{p}_{T} [(GeV/#it{c})^{-1}]");
-
-            h1PhiPiYield[i][j] = new TH1D(Form("h1PhiPiYield%i_%i", i, j), Form("h1PhiPiYield%i_%i", i, j), nbin_pT::Pi, pTPi_axis.data());
-            h1PhiPiYield[i][j]->SetTitle("; ; 1/N_{ev,#phi} d^{2}N_{(#pi^{+}+#pi^{#minus})}/d#it{y}d#it{p}_{T} [(GeV/#it{c})^{-1}]");
-
-            for (int k = 0; k < nbin_pT::K0S; k++) {
-                //if (i != 0 || j != 0 || k != 0) continue;
-                //if (i != 2 || k != 3) continue;
-                //if (i != 0) continue;
-
-                std::tie(PhiK0SYieldpTdiff[i][j][k], errPhiK0SYieldpTdiff[i][j][k]) = FitPhiK0S(mSetHisto2D[i][j][k], {i, j, k}, fileCanvasK0S);
-                PhiK0SYieldpTdiff[i][j][k] = PhiK0SYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTK0S_axis[k+1] - pTK0S_axis[k]) / mNEvents;
-                errPhiK0SYieldpTdiff[i][j][k] = errPhiK0SYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTK0S_axis[k+1] - pTK0S_axis[k]) / mNEvents;
-
-                h1PhiK0SYield[i][j]->SetBinContent(k+1, PhiK0SYieldpTdiff[i][j][k]);
-                h1PhiK0SYield[i][j]->SetBinError(k+1, errPhiK0SYieldpTdiff[i][j][k]);
+                h1PhiAssocYield->SetBinContent(k + 1, PhiAssocYieldpTdiff);
+                h1PhiAssocYield->SetBinError(k + 1, errPhiAssocYieldpTdiff);
             }
 
-            for (int k = 0; k < nbin_pT::Pi; k++) {
-                //if (i != 2 || j != 6 || k != 6) continue;
-                //if (i != 0 || j != 0) continue;
-                //if (i != 0) continue;
+            outputFile->cd();
+            h1PhiAssocYield->Write();
+            delete h1PhiAssocYield;
+        }
+    }
 
-                std::tie(PhiPiTPCYieldpTdiff[i][j][k], errPhiPiTPCYieldpTdiff[i][j][k]) = FitPhiPi(mSetHisto2D[i][j][k], {i, j, k}, 0, mMode-2, fileCanvasPiTPC);
-                PhiPiTPCYieldpTdiff[i][j][k] = PhiPiTPCYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTPi_axis[k+1] - pTPi_axis[k]) / mNEvents;
-                errPhiPiTPCYieldpTdiff[i][j][k] = errPhiPiTPCYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTPi_axis[k+1] - pTPi_axis[k]) / mNEvents;
-                //if (errPhiPiTPCYieldpTdiff[i][j][k] != errPhiPiTPCYieldpTdiff[i][j][k]) errPhiPiTPCYieldpTdiff[i][j][k] = 0.0;
+    outputFile->Close();
+}
 
-                h1PhiPiTPCYield[i][j]->SetBinContent(k+1, PhiPiTPCYieldpTdiff[i][j][k]);
-                h1PhiPiTPCYield[i][j]->SetBinError(k+1, errPhiPiTPCYieldpTdiff[i][j][k]);
-                
-                std::tie(PhiPiTOFYieldpTdiff[i][j][k], errPhiPiTOFYieldpTdiff[i][j][k]) = FitPhiPi(mSetHisto2D[i][j][k], {i, j, k}, 1, mMode-2, fileCanvasPiTOF);
-                PhiPiTOFYieldpTdiff[i][j][k] = PhiPiTOFYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTPi_axis[k+1] - pTPi_axis[k]) / mNEvents;
-                errPhiPiTOFYieldpTdiff[i][j][k] = errPhiPiTOFYieldpTdiff[i][j][k] / deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pTPi_axis[k+1] - pTPi_axis[k]) / mNEvents;
-                //if (errPhiPiTOFYieldpTdiff[i][j][k] != errPhiPiTOFYieldpTdiff[i][j][k]) errPhiPiTOFYieldpTdiff[i][j][k] = 0.0;
-
-                h1PhiPiTOFYield[i][j]->SetBinContent(k+1, PhiPiTOFYieldpTdiff[i][j][k]);
-                h1PhiPiTOFYield[i][j]->SetBinError(k+1, errPhiPiTOFYieldpTdiff[i][j][k]);
-
-                PhiPiYieldpTdiff[i][j][k] = (PhiPiTPCYieldpTdiff[i][j][k] + PhiPiTOFYieldpTdiff[i][j][k]) / 2.0;
-                errPhiPiYieldpTdiff[i][j][k] = TMath::Sqrt(TMath::Power(errPhiPiTPCYieldpTdiff[i][j][k], 2) + TMath::Power(errPhiPiTOFYieldpTdiff[i][j][k], 2)) / 2.0;
-
-                h1PhiPiYield[i][j]->SetBinContent(k+1, PhiPiYieldpTdiff[i][j][k]);
-                h1PhiPiYield[i][j]->SetBinError(k+1, errPhiPiYieldpTdiff[i][j][k]);
+void LFInvMassFitter::CheckValidMembers()
+{
+    int id = 0;
+    for (auto& histo2DArray : mSetHisto2D) {
+        for (auto& histo2D : histo2DArray) {
+            for (auto& histo : histo2D) {
+                if (!histo)
+                    std::cerr << "Error: One of the TH2 histograms in mSetHisto2D is not initialized." << std::endl;
+                else 
+                    std::cout << id << ": TH2 histogram is valid: " << histo << std::endl;
+                id++;
             }
         }
     }
-
-    //********************************************************************************************
-
-    /*for (int i = 0; i < nbin_deltay; i++) {
-        h1PhiK0SYieldMB[i] = new TH1D(Form("h1PhiK0SYieldMB%i", i), Form("h1PhiK0SYieldMB%i", i), nbin_pT::K0S, pTK0S_axis.data());
-
-        h1PhiPiTPCYieldMB[i] = new TH1D(Form("h1PhiPiTPCYieldMB%i", i), Form("h1PhiPiTPCYieldMB%i", i), nbin_pT::Pi, pTPi_axis.data());
-        h1PhiPiTOFYieldMB[i] = new TH1D(Form("h1PhiPiTOFYieldMB%i", i), Form("h1PhiPiTOFYieldMB%i", i), nbin_pT::Pi, pTPi_axis.data());
-        h1PhiPiYieldMB[i] = new TH1D(Form("h1PhiPiYieldMB%i", i), Form("h1PhiPiYieldMB%i", i), nbin_pT::Pi, pTPi_axis.data());
-
-        for (int k = 0; k < nbin_pT::K0S; k++) {
-            std::tie(PhiK0SYieldpTdiffMB[i][k], errPhiK0SYieldpTdiffMB[i][k]) = FitPhiK0S(mSetHistoMultInt2D[i][k], {i, k}, fileCanvasK0S);
-            PhiK0SYieldpTdiffMB[i][k] = PhiK0SYieldpTdiffMB[i][k] / deltay_axis[i] / (pTK0S_axis[k+1] - pTK0S_axis[k]) / mNEvents;
-            errPhiK0SYieldpTdiffMB[i][k] = errPhiK0SYieldpTdiffMB[i][k] / deltay_axis[i] / (pTK0S_axis[k+1] - pTK0S_axis[k]) / mNEvents;
-
-            h1PhiK0SYieldMB[i]->SetBinContent(k+1, PhiK0SYieldpTdiffMB[i][k]);
-            h1PhiK0SYieldMB[i]->SetBinError(k+1, errPhiK0SYieldpTdiffMB[i][k]);
-        }
-
-        for (int k = 0; k < nbin_pT::Pi; k++) {
-            std::tie(PhiPiTPCYieldpTdiffMB[i][k], errPhiPiTPCYieldpTdiffMB[i][k]) = FitPhiPi(mSetHistoMultInt2D[i][k], {i, k}, 0, mMode-2, fileCanvasPiTPC);
-            PhiPiTPCYieldpTdiffMB[i][k] = PhiPiTPCYieldpTdiffMB[i][k] / deltay_axis[i] / (pTPi_axis[k+1] - pTPi_axis[k]) / mNEvents;
-            errPhiPiTPCYieldpTdiffMB[i][k] = errPhiPiTPCYieldpTdiffMB[i][k] / deltay_axis[i] / (pTPi_axis[k+1] - pTPi_axis[k]) / mNEvents;
-            //if (errPhiPiTPCYieldpTdiffMB[i][k] != errPhiPiTPCYieldpTdiffMB[i][k]) errPhiPiTPCYieldpTdiffMB[i][k] = 0.0;
-
-            h1PhiPiTPCYieldMB[i]->SetBinContent(k+1, PhiPiTPCYieldpTdiffMB[i][k]);
-            h1PhiPiTPCYieldMB[i]->SetBinError(k+1, errPhiPiTPCYieldpTdiffMB[i][k]);
-
-            std::tie(PhiPiTOFYieldpTdiffMB[i][k], errPhiPiTOFYieldpTdiffMB[i][k]) = FitPhiPi(mSetHistoMultInt2D[i][k], {i, k}, 1, mMode-2, fileCanvasPiTOF);
-            PhiPiTOFYieldpTdiffMB[i][k] = PhiPiTOFYieldpTdiffMB[i][k] / deltay_axis[i] / (pTPi_axis[k+1] - pTPi_axis[k]) / mNEvents;
-            errPhiPiTOFYieldpTdiffMB[i][k] = errPhiPiTOFYieldpTdiffMB[i][k] / deltay_axis[i] / (pTPi_axis[k+1] - pTPi_axis[k]) / mNEvents;
-            //if (errPhiPiTOFYieldpTdiffMB[i][k] != errPhiPiTOFYieldpTdiffMB[i][k]) errPhiPiTOFYieldpTdiffMB[i][k] = 0.0;
-
-            h1PhiPiTOFYieldMB[i]->SetBinContent(k+1, PhiPiTOFYieldpTdiffMB[i][k]);
-            h1PhiPiTOFYieldMB[i]->SetBinError(k+1, errPhiPiTOFYieldpTdiffMB[i][k]);
-
-            PhiPiYieldpTdiffMB[i][k] = (PhiPiTPCYieldpTdiffMB[i][k] + PhiPiTOFYieldpTdiffMB[i][k]) / 2.0;
-            errPhiPiYieldpTdiffMB[i][k] = TMath::Sqrt(TMath::Power(errPhiPiTPCYieldpTdiffMB[i][k], 2) + TMath::Power(errPhiPiTOFYieldpTdiffMB[i][k], 2)) / 2.0;
-
-            h1PhiPiYieldMB[i]->SetBinContent(k+1, PhiPiYieldpTdiffMB[i][k]);
-            h1PhiPiYieldMB[i]->SetBinError(k+1, errPhiPiYieldpTdiffMB[i][k]);
-        }
-    }*/
-
-    //********************************************************************************************
-
-    std::array<TCanvas*, nbin_deltay> cPhiK0SYield = PlotHistograms(h1PhiK0SYield, h1PhiK0SYieldMB, mOutPath, "rawSpectrumK0SDY%i2D");
-    std::array<TCanvas*, nbin_deltay> cPhiPiTPCYield = PlotHistograms(h1PhiPiTPCYield, h1PhiPiTPCYieldMB, mOutPath, "rawSpectrumPiTPCDY%i2D");
-    std::array<TCanvas*, nbin_deltay> cPhiPiTOFYield = PlotHistograms(h1PhiPiTOFYield, h1PhiPiTOFYieldMB, mOutPath, "rawSpectrumPiTOFDY%i2D");
-
-    //********************************************************************************************
-
-    Double_t PhiK0SYieldpTint[nbin_deltay][nbin_mult] = {0}, errPhiK0SYieldpTint[nbin_deltay][nbin_mult] = {0};
-
-    for (int i = 0; i < nbin_deltay; i++) {
-        for (int j = 0; j < nbin_mult; j++) {
-            for (int k = 0; k < nbin_pT::K0S; k++) {
-                PhiK0SYieldpTint[i][j] += PhiK0SYieldpTdiff[i][j][k] * (pTK0S_axis[k+1] - pTK0S_axis[k]);
-                errPhiK0SYieldpTint[i][j] += TMath::Power(errPhiK0SYieldpTdiff[i][j][k] * (pTK0S_axis[k+1] - pTK0S_axis[k]), 2);
-            }
-            errPhiK0SYieldpTint[i][j] = TMath::Sqrt(errPhiK0SYieldpTint[i][j]);
-        }
-    }
-
-    TMultiGraph* mgK0S = new TMultiGraph();
-    TGraphAsymmErrors* K0S[nbin_deltay];
-
-    for (int i = 0; i < nbin_deltay; i++) {
-        K0S[i] = new TGraphAsymmErrors(nbin_mult, mult.data(), PhiK0SYieldpTint[i], errmult.data(), errmult.data(), errPhiK0SYieldpTint[i], errPhiK0SYieldpTint[i]);
-        if (i == 0) {
-            PlotFeatures(K0S[i], 33, kBlack, 2, 1, kBlack, 2, 3001, kBlack, 0.4, mgK0S);
-        } else if (i == 1) {
-            PlotFeatures(K0S[i], 33, kGreen+3, 2, 1, kGreen+3, 2, 3001, kGreen+3, 0.4, mgK0S);
-        } else if (i == 2) {
-            PlotFeatures(K0S[i], 33, kRed+1, 2, 1, kRed+1, 2, 3001, kRed+1, 0.4, mgK0S);
-        }
-    }
-
-    TCanvas* cK0S = new TCanvas("cK0S", "cK0S", 1000, 800);
-    cK0S->cd();
-    //gPad->SetLogy();
-    gStyle->SetOptStat(0);
-    //gPad->SetMargin(0.16,0.01,0.13,0.06)
-    mgK0S->SetTitle("; #LTdN_{ch}/d#eta#GT_{|#eta|<0.5} ; 1/N_{ev,#phi} dN_{K^{0}_{S}}/d#it{y}");
-    mgK0S->Draw("AP");
-
-    TLegend* legK0S1 = new TLegend(0.15, 0.82, 0.35, 0.85);
-    legK0S1->SetHeader("#bf{This work}");
-    legK0S1->SetTextSize(0.05);
-    legK0S1->SetLineWidth(0);
-    legK0S1->Draw("same");
-
-    TLegend* legK0S2 = new TLegend(0.15, 0.62, 0.35, 0.82);
-    legK0S2->SetHeader("pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5");
-    legK0S2->AddEntry(K0S[0], "Inclusive", "p");
-    legK0S2->AddEntry(K0S[1], "|#it{#Deltay}| < 0.5", "p");
-    legK0S2->SetTextSize(0.05);
-    legK0S2->SetLineWidth(0);
-    legK0S2->Draw("same");
-
-    /*string outNameRawK0SYield = outPath + "rawK0SYield.root";
-    cK0S->SaveAs(outNameRawK0SYield.c_str());
-    outNameRawK0SYield = outPath + "rawK0SYield.pdf";
-    cK0S->SaveAs(outNameRawK0SYield.c_str());*/
-
-    //********************************************************************************************
-
-    Double_t PhiPiYieldpTint[nbin_deltay][nbin_mult] = {0}, errPhiPiYieldpTint[nbin_deltay][nbin_mult] = {0};
-
-    for (int i = 0; i < nbin_deltay; i++) {
-        for (int j = 0; j < nbin_mult; j++) {
-            for (int k = 0; k < nbin_pT::Pi; k++) {
-                PhiPiYieldpTint[i][j] += PhiPiYieldpTdiff[i][j][k] * (pTPi_axis[k+1] - pTPi_axis[k]);
-                errPhiPiYieldpTint[i][j] += TMath::Power(errPhiPiYieldpTdiff[i][j][k] * (pTPi_axis[k+1] - pTPi_axis[k]), 2);
-            }
-            errPhiPiYieldpTint[i][j] = TMath::Sqrt(errPhiPiYieldpTint[i][j]);
-        }
-    }
-
-    TMultiGraph* mgPi = new TMultiGraph();
-    TGraphAsymmErrors* Pi[nbin_deltay];
-
-    for (int i = 0; i < nbin_deltay; i++) {
-        Pi[i] = new TGraphAsymmErrors(nbin_mult, mult.data(), PhiPiYieldpTint[i], errmult.data(), errmult.data(), errPhiPiYieldpTint[i], errPhiPiYieldpTint[i]);
-        if (i == 0) {
-            PlotFeatures(Pi[i], 33, kBlack, 2, 1, kBlack, 2, 3001, kBlack, 0.4, mgPi);
-        } else if (i == 1) {
-            PlotFeatures(Pi[i], 33, kGreen+3, 2, 1, kGreen+3, 2, 3001, kGreen+3, 0.4, mgPi);
-        } else if (i == 2) {
-            PlotFeatures(Pi[i], 33, kRed+1, 2, 1, kRed+1, 2, 3001, kRed+1, 0.4, mgPi);
-        }
-    }
-
-    TCanvas* cPi = new TCanvas("cPi", "cPi", 1000, 800);
-    cPi->cd();
-    //gPad->SetLogy();
-    gStyle->SetOptStat(0);
-    mgPi->SetTitle("; #LTdN_{ch}/d#eta#GT_{|#eta|<0.5} ; #frac{1}{N_{ev,#phi}} (#pi^{+}+#pi^{#minus})");
-    mgPi->Draw("AP");
-
-    TLegend* legPi1 = new TLegend(0.15, 0.82, 0.35, 0.85);
-    legPi1->SetHeader("#bf{This work}");
-    legPi1->SetTextSize(0.05);
-    legPi1->SetLineWidth(0);
-    legPi1->Draw("same");
-
-    TLegend* legPi2 = new TLegend(0.15, 0.62, 0.35, 0.82);
-    legPi2->SetHeader("pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5");
-    legPi2->AddEntry(Pi[0], "Inclusive", "p");
-    legPi2->AddEntry(Pi[1], "|#it{#Deltay}| < 0.5", "p");
-    legPi2->SetTextSize(0.05);
-    legPi2->SetLineWidth(0);
-    legPi2->Draw("same");
-
-    /*string outNameRawPiYield = outPath + "rawPiYield.root";
-    cPi->SaveAs(outNameRawPiYield.c_str());
-    outNameRawPiYield = outPath + "rawPiYield.pdf";
-    cPi->SaveAs(outNameRawPiYield.c_str());*/
-
-    //********************************************************************************************
-
-    TFile* outFile = new TFile(mOutFileName.c_str(), "RECREATE");
-    outFile->cd();
-
-    for (int i = 0; i < nbin_deltay; i++) {
-        for (int j = 0; j < nbin_mult; j++) {
-            h1PhiK0SYield[i][j]->Write();
-            h1PhiPiTPCYield[i][j]->Write();
-            h1PhiPiTOFYield[i][j]->Write();
-        }
-        h1PhiK0SYieldMB[i]->Write();
-        h1PhiPiTPCYieldMB[i]->Write();
-        h1PhiPiTOFYieldMB[i]->Write();
-    }
-
-    outFile->Close();
-
-    return;
 }

@@ -21,15 +21,17 @@ struct nbin_pT {
 const std::array<Double_t, nbin_deltay> deltay_axis = {1.0, 0.5};
 const std::array<Double_t, nbin_mult+1> mult_axis = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
 
-const std::array<Double_t, nbin_pT::K0S+1> pTK0S_axis = {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0};
-const std::array<Double_t, nbin_pT::Pi+1> pTPi_axis = {0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0};
-
 /*struct pT_axis {
     static const std::array<Double_t, nbin_pT::K0S+1> K0S;
     static const std::array<Double_t, nbin_pT::Pi+1> Pi;
 };
 const std::array<double, nbin_pT::K0S + 1> pT_axis::K0S = {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0};
 const std::array<double, nbin_pT::Pi + 1> pT_axis::Pi = {0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0};*/
+
+struct pT_axis {
+    inline static const std::vector<Double_t> K0S{0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0};
+    inline static const std::vector<Double_t> Pi{0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0};
+};
 
 const std::array<Double_t, nbin_mult> mult = {20.3, 17.1, 14.6, 12.9, 11.6, 10.1, 8.5, 7.2, 5.7, 3.8};
 const std::array<Double_t, nbin_mult> errmult = {0.5, 0.4, 0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.1, 0.1};

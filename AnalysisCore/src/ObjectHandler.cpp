@@ -211,27 +211,23 @@ TH1* ObjectHandler::Project1D(const char* hname, const std::vector<std::tuple<In
 
 void ObjectHandler::CheckValidMembers()
 {
-    if (!mTHnSparse) {
+    if (!mTHnSparse)
         std::cerr << "Error: mTHnSparse is not initialized." << std::endl;
-    } else {
+    else
         std::cout << "mTHnSparse is valid." << std::endl;
     
-    if (mNEvents <= 0) {
+    if (mNEvents <= 0)
         std::cerr << "Error: mNEvents is not set or invalid." << std::endl;
-    } else {
+    else
         std::cout << "mNEvents is valid: " << mNEvents << std::endl;
-    }
 
-    if (mOutPath.empty()) {
+    if (mOutPath.empty())
         std::cerr << "Error: mOutPath is not set." << std::endl;
-    } else {
+    else
         std::cout << "mOutPath is valid: " << mOutPath << std::endl;
-    }
 
-    if (mOutFileName.empty()) {
+    if (mOutFileName.empty())
         std::cerr << "Error: mOutFileName is not set." << std::endl;
-    } else {
+    else
         std::cout << "mOutFileName is valid: " << mOutFileName << std::endl;
-    }
-    }
 }

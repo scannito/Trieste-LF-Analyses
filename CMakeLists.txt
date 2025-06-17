@@ -20,7 +20,7 @@ set(ANALYSIS_CORE "${CMAKE_SOURCE_DIR}/AnalysisCore")
 set(ANALYSIS_STE "${CMAKE_SOURCE_DIR}/AnalysisSte")
 set(RAPIDJSON "${CMAKE_SOURCE_DIR}/Thirdparty/rapidjson/include")
 
-# Copy only config.json from AnlaysisSte to build directory
+# Copy config.json files from AnalysisSte to build directory
 configure_file(${ANALYSIS_STE}/configK0S.json ${CMAKE_BINARY_DIR}/configK0S.json COPYONLY)
 configure_file(${ANALYSIS_STE}/configPi.json ${CMAKE_BINARY_DIR}/configPi.json COPYONLY)
 

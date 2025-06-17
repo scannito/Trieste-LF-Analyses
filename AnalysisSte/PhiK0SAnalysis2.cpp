@@ -16,14 +16,32 @@
 #include "TMultiGraph.h"
 
 #include "AnalysisUtils/Parameters.h"
+//#include "AnalysisUtils/Plot.h"
 
-#include "ObjectHandler.h"
 #include "LFInvMassFitter.h"
 
 int main(int argc, char* argv[])
 {
-    LFInvMassFitter PhiK0SFitter("../AnalysisSte/data/PhiK0SAnalysisProjections.root", nbin_pT::K0S, "h2PhiK0SInvMass");
+    std::cout << "Starting Phi K0S Analysis..." << std::endl;
 
-    LFInvMassFitter PhiPiTPCFitter("../AnalysisSte/data/PhiPiTPCAnalysisProjections.root", nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC");
-    LFInvMassFitter PhiPiTOFFitter("../AnalysisSte/data/PhiPiTOFAnalysisProjections.root", nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF");
+    LFInvMassFitter PhiK0SFitter("K0S", "../AnalysisSte/data/PhiK0SAnalysisProjections.root", nbin_pT::K0S, "h2PhiK0SInvMass");
+    PhiK0SFitter.CheckValidMembers();
+    /*TFile* file = TFile::Open("try.root", "RECREATE");
+    file->cd();
+    auto* h = PhiK0SFitter.mSetHisto2D[1][0][0];
+    if (h)
+        h->Write("h2PhiK0SInvMass");
+    else
+        std::cerr << "Error: histogram pointer is null!\n";
+    // Print number of entries in the histogram  
+    std::cout << "About to write histogram; entries = " << h->GetEntries() << ", integral = " << h->Integral() << std::endl;
+    std::cout << "Histo memory address: " << h << std::endl;*/
+    
+    PhiK0SFitter.ExportYields("../AnalysisSte/data/PhiK0SYields.root", nbin_pT::K0S, pT_axis::K0S, "h1PhiK0SYield", 0);
+
+    /*LFInvMassFitter PhiPiTPCFitter("Pi", "../AnalysisSte/data/PhiPiTPCAnalysisProjections.root", nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC");
+    PhiPiTPCFitter.ExportYields("../AnalysisSte/data/PhiPiTPCYields.root", nbin_pT::Pi, pT_axis::Pi, "h1PhiPiTPCYield", 0);
+
+    LFInvMassFitter PhiPiTOFFitter("Pi", "../AnalysisSte/data/PhiPiTOFAnalysisProjections.root", nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF");
+    PhiPiTOFFitter.ExportYields("../AnalysisSte/data/PhiPiTOFYields.root", nbin_pT::Pi, pT_axis::Pi, "h1PhiPiTOFYield", 1);*/
 }
