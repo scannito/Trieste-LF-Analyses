@@ -1,4 +1,5 @@
 #include "Riostream.h"
+#include "TApplication.h"
 #include "TFile.h"
 #include "TLegend.h"
 #include "TH1F.h"
@@ -18,31 +19,55 @@
 #include "AnalysisUtils/Parameters.h"
 #include "AnalysisUtils/Plot.h"
 
-#include "LFInvMassFitter.h"
-
 int main(int argc, char* argv[])
 {
-    TFile* outFile = new TFile(mOutFileName.c_str(), "RECREATE");
+    TApplication app("PhiK0SAnalysis", &argc, argv);
+
+    std::cout << "Starting Phi K0S Analysis..." << std::endl;
+
+    std::array<std::array<TH1*, nbin_mult>, nbin_deltay> h1PhiK0SYield;
+    std::array<std::array<TH1*, nbin_mult>, nbin_deltay> h1PhiPiTPCYield;
+    std::array<std::array<TH1*, nbin_mult>, nbin_deltay> h1PhiPiTOFYield;
+
+    TFile* inFileK0S = TFile::Open("../AnalysisSte/data/PhiK0SYields.root", "READ");
+    TFile* inFilePiTPC = TFile::Open("../AnalysisSte/data/PhiPiTPCYields.root", "READ");
+    TFile* inFilePiTOF = TFile::Open("../AnalysisSte/data/PhiPiTOFYields.root", "READ");
+
     for (int i = 0; i < nbin_deltay; i++) {
         for (int j = 0; j < nbin_mult; j++) {
-            h1PhiAssocYield[i][j]->Write();
+            h1PhiK0SYield[i][j] = (TH1*)inFileK0S->Get(Form("h1PhiK0SYield_%i_%i", i, j));
+            h1PhiK0SYield[i][j]->SetDirectory(0);
+            h1PhiPiTPCYield[i][j] = (TH1*)inFilePiTPC->Get(Form("h1PhiPiTPCYield_%i_%i", i, j));
+            h1PhiPiTPCYield[i][j]->SetDirectory(0);
+            h1PhiPiTOFYield[i][j] = (TH1*)inFilePiTOF->Get(Form("h1PhiPiTOFYield_%i_%i", i, j));
+            h1PhiPiTOFYield[i][j]->SetDirectory(0);
         }
     }
-    outFile->Close();
 
-    std::array<TCanvas*, nbin_deltay> cPhiK0SYield = PlotHistograms(h1PhiK0SYield, h1PhiK0SYieldMB, mOutPath, "rawSpectrumK0SDY%i2D");
+    inFileK0S->Close();
+    inFilePiTPC->Close();
+    inFilePiTOF->Close();
+    
+    /*std::array<TCanvas*, nbin_deltay> cPhiK0SYield = PlotHistograms(h1PhiK0SYield, h1PhiK0SYieldMB, mOutPath, "rawSpectrumK0SDY%i2D");
     std::array<TCanvas*, nbin_deltay> cPhiPiTPCYield = PlotHistograms(h1PhiPiTPCYield, h1PhiPiTPCYieldMB, mOutPath, "rawSpectrumPiTPCDY%i2D");
-    std::array<TCanvas*, nbin_deltay> cPhiPiTOFYield = PlotHistograms(h1PhiPiTOFYield, h1PhiPiTOFYieldMB, mOutPath, "rawSpectrumPiTOFDY%i2D");
+    std::array<TCanvas*, nbin_deltay> cPhiPiTOFYield = PlotHistograms(h1PhiPiTOFYield, h1PhiPiTOFYieldMB, mOutPath, "rawSpectrumPiTOFDY%i2D");*/
 
-    Double_t PhiK0SYieldpTint[nbin_deltay][nbin_mult] = {0}, errPhiK0SYieldpTint[nbin_deltay][nbin_mult] = {0};
+    std::array<std::array<Double_t, nbin_mult>, nbin_deltay> PhiK0SYieldpTint{}, errPhiK0SYieldpTint{};
+    std::array<std::array<Double_t, nbin_mult>, nbin_deltay> PhiPiYieldpTint{}, errPhiPiYieldpTint{};
 
     for (int i = 0; i < nbin_deltay; i++) {
         for (int j = 0; j < nbin_mult; j++) {
             for (int k = 0; k < nbin_pT::K0S; k++) {
-                PhiK0SYieldpTint[i][j] += PhiK0SYieldpTdiff[i][j][k] * (pTK0S_axis[k+1] - pTK0S_axis[k]);
-                errPhiK0SYieldpTint[i][j] += TMath::Power(errPhiK0SYieldpTdiff[i][j][k] * (pTK0S_axis[k+1] - pTK0S_axis[k]), 2);
+                PhiK0SYieldpTint[i][j] += h1PhiK0SYield[i][j]->GetBinContent(k+1) * (pT_axis::K0S[k+1] - pT_axis::K0S[k]);
+                errPhiK0SYieldpTint[i][j] += TMath::Power(h1PhiK0SYield[i][j]->GetBinError(k+1) * (pT_axis::K0S[k+1] - pT_axis::K0S[k]), 2);
             }
             errPhiK0SYieldpTint[i][j] = TMath::Sqrt(errPhiK0SYieldpTint[i][j]);
+
+            for (int k = 0; k < nbin_pT::Pi; k++) {
+                PhiPiYieldpTint[i][j] += h1PhiPiTPCYield[i][j]->GetBinContent(k+1) * (pT_axis::Pi[k+1] - pT_axis::Pi[k]);
+                errPhiPiYieldpTint[i][j] += TMath::Power(h1PhiPiTPCYield[i][j]->GetBinError(k+1) * (pT_axis::Pi[k+1] - pT_axis::Pi[k]), 2);
+            }
+            errPhiPiYieldpTint[i][j] = TMath::Sqrt(errPhiPiYieldpTint[i][j]);
         }
     }
 
@@ -50,13 +75,13 @@ int main(int argc, char* argv[])
     TGraphAsymmErrors* K0S[nbin_deltay];
 
     for (int i = 0; i < nbin_deltay; i++) {
-        K0S[i] = new TGraphAsymmErrors(nbin_mult, mult.data(), PhiK0SYieldpTint[i], errmult.data(), errmult.data(), errPhiK0SYieldpTint[i], errPhiK0SYieldpTint[i]);
+        K0S[i] = new TGraphAsymmErrors(nbin_mult, mult.data(), PhiK0SYieldpTint[i].data(), errmult.data(), errmult.data(), errPhiK0SYieldpTint[i].data(), errPhiK0SYieldpTint[i].data());
         if (i == 0) {
-            PlotFeatures(K0S[i], 33, kBlack, 2, 1, kBlack, 2, 3001, kBlack, 0.4, mgK0S);
+            SetGraphStyle(K0S[i], 33, kBlack, 2, 1, kBlack, 2, 3001, kBlack, 0.4, mgK0S);
         } else if (i == 1) {
-            PlotFeatures(K0S[i], 33, kGreen+3, 2, 1, kGreen+3, 2, 3001, kGreen+3, 0.4, mgK0S);
+            SetGraphStyle(K0S[i], 33, kGreen+3, 2, 1, kGreen+3, 2, 3001, kGreen+3, 0.4, mgK0S);
         } else if (i == 2) {
-            PlotFeatures(K0S[i], 33, kRed+1, 2, 1, kRed+1, 2, 3001, kRed+1, 0.4, mgK0S);
+            SetGraphStyle(K0S[i], 33, kRed+1, 2, 1, kRed+1, 2, 3001, kRed+1, 0.4, mgK0S);
         }
     }
 
@@ -87,31 +112,17 @@ int main(int argc, char* argv[])
     outNameRawK0SYield = outPath + "rawK0SYield.pdf";
     cK0S->SaveAs(outNameRawK0SYield.c_str());*/
 
-    //********************************************************************************************
-
-    Double_t PhiPiYieldpTint[nbin_deltay][nbin_mult] = {0}, errPhiPiYieldpTint[nbin_deltay][nbin_mult] = {0};
-
-    for (int i = 0; i < nbin_deltay; i++) {
-        for (int j = 0; j < nbin_mult; j++) {
-            for (int k = 0; k < nbin_pT::Pi; k++) {
-                PhiPiYieldpTint[i][j] += PhiPiYieldpTdiff[i][j][k] * (pTPi_axis[k+1] - pTPi_axis[k]);
-                errPhiPiYieldpTint[i][j] += TMath::Power(errPhiPiYieldpTdiff[i][j][k] * (pTPi_axis[k+1] - pTPi_axis[k]), 2);
-            }
-            errPhiPiYieldpTint[i][j] = TMath::Sqrt(errPhiPiYieldpTint[i][j]);
-        }
-    }
-
     TMultiGraph* mgPi = new TMultiGraph();
     TGraphAsymmErrors* Pi[nbin_deltay];
 
     for (int i = 0; i < nbin_deltay; i++) {
-        Pi[i] = new TGraphAsymmErrors(nbin_mult, mult.data(), PhiPiYieldpTint[i], errmult.data(), errmult.data(), errPhiPiYieldpTint[i], errPhiPiYieldpTint[i]);
+        Pi[i] = new TGraphAsymmErrors(nbin_mult, mult.data(), PhiPiYieldpTint[i].data(), errmult.data(), errmult.data(), errPhiPiYieldpTint[i].data(), errPhiPiYieldpTint[i].data());
         if (i == 0) {
-            PlotFeatures(Pi[i], 33, kBlack, 2, 1, kBlack, 2, 3001, kBlack, 0.4, mgPi);
+            SetGraphStyle(Pi[i], 33, kBlack, 2, 1, kBlack, 2, 3001, kBlack, 0.4, mgPi);
         } else if (i == 1) {
-            PlotFeatures(Pi[i], 33, kGreen+3, 2, 1, kGreen+3, 2, 3001, kGreen+3, 0.4, mgPi);
+            SetGraphStyle(Pi[i], 33, kGreen+3, 2, 1, kGreen+3, 2, 3001, kGreen+3, 0.4, mgPi);
         } else if (i == 2) {
-            PlotFeatures(Pi[i], 33, kRed+1, 2, 1, kRed+1, 2, 3001, kRed+1, 0.4, mgPi);
+            SetGraphStyle(Pi[i], 33, kRed+1, 2, 1, kRed+1, 2, 3001, kRed+1, 0.4, mgPi);
         }
     }
 
@@ -140,4 +151,8 @@ int main(int argc, char* argv[])
     cPi->SaveAs(outNameRawPiYield.c_str());
     outNameRawPiYield = outPath + "rawPiYield.pdf";
     cPi->SaveAs(outNameRawPiYield.c_str());*/
+
+    std::cout << "Phi K0S Analysis completed successfully!" << std::endl;
+
+    app.Run();
 }
