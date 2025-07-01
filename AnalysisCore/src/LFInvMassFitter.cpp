@@ -209,12 +209,14 @@ std::pair<Double_t, Double_t> LFInvMassFitter::GetPhiPurityAndError(TH1* h1PhiIn
     return std::make_pair(purityVoigt, errpurityVoigt);
 }
 
-std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiK0S(TH2* h2PhiK0SInvMass, std::vector<Int_t> indices, TFile* file,
+std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiK0S(TH2* h2PhiK0SInvMass, std::vector<Int_t> indices, TFile* file, Double_t nsigma,
                                                 const std::vector<Double_t>& params, const std::vector<Double_t>& lowLimits, const std::vector<Double_t>& upLimits)
 {
     // Definisci le variabili x e y
     RooRealVar x("x", "x", h2PhiK0SInvMass->GetXaxis()->GetXmin(), h2PhiK0SInvMass->GetXaxis()->GetXmax());
     RooRealVar y("y", "y", h2PhiK0SInvMass->GetYaxis()->GetXmin(), h2PhiK0SInvMass->GetYaxis()->GetXmax());
+
+    std::cout << "Fitting model to data..." << std::endl;
 
     // Converte l'istogramma 2D in un RooDataHist
     RooDataHist data("data", "data", RooArgList(x, y), h2PhiK0SInvMass);
@@ -281,8 +283,8 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiK0S(TH2* h2PhiK0SInvMass, s
     nbkgsig.Print();
     nbkgbkg.Print();
 
-    Int_t lowedge = h2PhiK0SInvMass->GetXaxis()->FindFixBin(meanCB.getVal() - 3 * sigmaCB.getVal());
-    Int_t upedge = h2PhiK0SInvMass->GetXaxis()->FindFixBin(meanCB.getVal() + 3 * sigmaCB.getVal());
+    Int_t lowedge = h2PhiK0SInvMass->GetXaxis()->FindFixBin(meanCB.getVal() - nsigma * sigmaCB.getVal());
+    Int_t upedge = h2PhiK0SInvMass->GetXaxis()->FindFixBin(meanCB.getVal() + nsigma * sigmaCB.getVal());
 
     Double_t lowfitK0S = h2PhiK0SInvMass->GetXaxis()->GetBinLowEdge(lowedge);
     Double_t upfitK0S = h2PhiK0SInvMass->GetXaxis()->GetBinLowEdge(upedge +1);
@@ -325,9 +327,55 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiK0S(TH2* h2PhiK0SInvMass, s
     hist2D_fit->GetZaxis()->SetTitleOffset(1.5);
     hist2D_fit->Draw("SURF SAME");
 
+    TCanvas* cPhiK0SInvMassProjection;
+    cPhiK0SInvMassProjection->Divide(2,1);
+    if (indices.size() == 2) cPhiK0SInvMassProjection = new TCanvas(Form("cPhiK0SInvMassProjection_%d_%d", indices[0], indices[1]), Form("cPhiK0SInvMassProjection_%d_%d", indices[0], indices[1]), 800, 800);
+    else if (indices.size() == 3) cPhiK0SInvMassProjection = new TCanvas(Form("cPhiK0SInvMassProjection_%d_%d_%d", indices[0], indices[1], indices[2]), Form("cPhiK0SInvMassProjection_%d_%d_%d", indices[0], indices[1], indices[2]), 800, 800);
+    gStyle->SetOptStat(0); 
+
+    cPhiK0SInvMassProjection->cd(1);
+    RooPlot* frameX = x.frame();
+    data.plotOn(frameX);
+    model.plotOn(frameX);
+    model.plotOn(frameX, Components(sigsig), LineStyle(kSolid), LineColor(kGreen), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameX, Components(sigbkg), LineStyle(kSolid), LineColor(kRed), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameX, Components(bkgsig), LineStyle(kSolid), LineColor(kBlack), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameX, Components(bkgbkg), LineStyle(kSolid), LineColor(kMagenta), Normalization(1.0, RooAbsReal::RelativeExpected));
+    frameX->SetTitle("");
+    frameX->SetXTitle("#it{M}(#pi^{+}#pi^{#minus}) (GeV/#it{c}^{2})");
+    frameX->SetYTitle("Counts");
+    frameX->Draw();
+
+    // Aggiungi le linee verticali per i tagli
+    TLine* line1 = new TLine(lowfitK0S, frameX->GetMinimum(), lowfitK0S, frameX->GetMaximum());
+    TLine* line2 = new TLine(upfitK0S, frameX->GetMinimum(), upfitK0S, frameX->GetMaximum());
+
+    line1->SetLineColor(kRed);
+    line1->SetLineStyle(kDashed);
+    line1->Draw("same");
+
+    line2->SetLineColor(kRed);
+    line2->SetLineStyle(kDashed);
+    line2->Draw("same");
+
+    cPhiK0SInvMassProjection->cd(2);
+    RooPlot* frameY = y.frame();
+    data.plotOn(frameY);
+    model.plotOn(frameY);
+    model.plotOn(frameY, Components(sigsig), LineStyle(kSolid), LineColor(kGreen), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameY, Components(sigbkg), LineStyle(kSolid), LineColor(kRed), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameY, Components(bkgsig), LineStyle(kSolid), LineColor(kBlack), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameY, Components(bkgbkg), LineStyle(kSolid), LineColor(kMagenta), Normalization(1.0, RooAbsReal::RelativeExpected));
+    frameY->SetTitle("");
+    frameY->SetXTitle("#it{M}(K^{+}K^{#minus}) (GeV/#it{c}^{2})");
+    frameY->SetYTitle("Counts");
+    frameY->Draw();
+
     file->cd();
     cPhiK0SInvMass->Write();
+    cPhiK0SInvMassProjection->Write();
     delete cPhiK0SInvMass;
+    delete cPhiK0SInvMassProjection;
 
     // Calcola l'integrale della funzione prodotto nel range specificato
     x.setRange("signal", lowfitK0S, upfitK0S);
@@ -340,7 +388,7 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiK0S(TH2* h2PhiK0SInvMass, s
     return std::make_pair(PhiK0SYieldpTdiff, errPhiK0SYieldpTdiff);
 }
 
-std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiPi(TH2* h2PhiPiInvMass, std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, TFile* file,
+std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiPi(TH2* h2PhiPiInvMass, std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, TFile* file, Double_t nsigma,
                                                const std::vector<Double_t>& params, const std::vector<Double_t>& lowLimits, const std::vector<Double_t>& upLimits)
 {
     // Definisci le variabili x e y
@@ -476,8 +524,8 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiPi(TH2* h2PhiPiInvMass, std
     alpha2CB.Print();
     n2CB.Print();
 
-    Int_t lowedge = h2PhiPiInvMass->GetXaxis()->FindFixBin(meanCB.getVal() - 3 * sigmaCB.getVal());
-    Int_t upedge = h2PhiPiInvMass->GetXaxis()->FindFixBin(meanCB.getVal() + 3 * sigmaCB.getVal());
+    Int_t lowedge = h2PhiPiInvMass->GetXaxis()->FindFixBin(meanCB.getVal() - nsigma * sigmaCB.getVal());
+    Int_t upedge = h2PhiPiInvMass->GetXaxis()->FindFixBin(meanCB.getVal() + nsigma * sigmaCB.getVal());
 
     Double_t lowfitPi = h2PhiPiInvMass->GetXaxis()->GetBinLowEdge(lowedge);
     Double_t upfitPi = h2PhiPiInvMass->GetXaxis()->GetBinLowEdge(upedge +1);
