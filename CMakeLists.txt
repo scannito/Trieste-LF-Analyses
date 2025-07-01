@@ -13,31 +13,7 @@ include(${ROOT_USE_FILE})
 # Add subdirectories
 add_subdirectory(AnalysisUtils)
 add_subdirectory(AnalysisCore)
-
-# Source/include path
-#set(ANALYSIS_UTILS "${CMAKE_SOURCE_DIR}/AnalysisUtils")
-set(ANALYSIS_CORE "${CMAKE_SOURCE_DIR}/AnalysisCore")
-set(ANALYSIS_STE "${CMAKE_SOURCE_DIR}/AnalysisSte")
-set(RAPIDJSON "${CMAKE_SOURCE_DIR}/Thirdparty/rapidjson/include")
-
-# Copy config.json files from AnalysisSte to build directory
-configure_file(${ANALYSIS_STE}/configK0S.json ${CMAKE_BINARY_DIR}/configK0S.json COPYONLY)
-configure_file(${ANALYSIS_STE}/configPi.json ${CMAKE_BINARY_DIR}/configPi.json COPYONLY)
-
-# Define the executable
-add_executable(PhiK0SAnalysis1 ${ANALYSIS_STE}/PhiK0SAnalysis1.cpp ${ANALYSIS_CORE}/src/ObjectHandler.cpp)
-add_executable(PhiK0SAnalysis2 ${ANALYSIS_STE}/PhiK0SAnalysis2.cpp ${ANALYSIS_CORE}/src/ObjectHandler.cpp ${ANALYSIS_CORE}/src/LFInvMassFitter.cpp)
-add_executable(PhiK0SAnalysis3 ${ANALYSIS_STE}/PhiK0SAnalysis3.cpp ${ANALYSIS_CORE}/src/ObjectHandler.cpp ${ANALYSIS_CORE}/src/LFInvMassFitter.cpp)
-
-# Include directories
-target_include_directories(PhiK0SAnalysis1 PRIVATE ${ANALYSIS_CORE} ${RAPIDJSON})
-target_include_directories(PhiK0SAnalysis2 PRIVATE ${ANALYSIS_CORE} ${RAPIDJSON})
-target_include_directories(PhiK0SAnalysis3 PRIVATE ${ANALYSIS_CORE} ${RAPIDJSON})
-
-# Link both your library and ROOT to the executable
-target_link_libraries(PhiK0SAnalysis1 PRIVATE LFInvMassFitter ${ROOT_LIBRARIES})
-target_link_libraries(PhiK0SAnalysis2 PRIVATE LFInvMassFitter ${ROOT_LIBRARIES})
-target_link_libraries(PhiK0SAnalysis3 PRIVATE LFInvMassFitter ${ROOT_LIBRARIES})
+add_subdirectory(AnalysisSte)
 
 # Fetch rapidjson
 #include(FetchContent)
