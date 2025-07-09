@@ -327,7 +327,9 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiK0S(TH2* h2PhiK0SInvMass, s
     hist2D_fit->GetZaxis()->SetTitleOffset(1.5);
     hist2D_fit->Draw("SURF SAME");
 
-    TCanvas* cPhiK0SInvMassProjection;
+    std::cout << "Creating projections for K0S invariant mass..." << std::endl;
+
+    /*TCanvas* cPhiK0SInvMassProjection;
     cPhiK0SInvMassProjection->Divide(2,1);
     if (indices.size() == 2) cPhiK0SInvMassProjection = new TCanvas(Form("cPhiK0SInvMassProjection_%d_%d", indices[0], indices[1]), Form("cPhiK0SInvMassProjection_%d_%d", indices[0], indices[1]), 800, 800);
     else if (indices.size() == 3) cPhiK0SInvMassProjection = new TCanvas(Form("cPhiK0SInvMassProjection_%d_%d_%d", indices[0], indices[1], indices[2]), Form("cPhiK0SInvMassProjection_%d_%d_%d", indices[0], indices[1], indices[2]), 800, 800);
@@ -369,13 +371,13 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiK0S(TH2* h2PhiK0SInvMass, s
     frameY->SetTitle("");
     frameY->SetXTitle("#it{M}(K^{+}K^{#minus}) (GeV/#it{c}^{2})");
     frameY->SetYTitle("Counts");
-    frameY->Draw();
+    frameY->Draw();*/
 
     file->cd();
     cPhiK0SInvMass->Write();
-    cPhiK0SInvMassProjection->Write();
+    //cPhiK0SInvMassProjection->Write();
     delete cPhiK0SInvMass;
-    delete cPhiK0SInvMassProjection;
+    //delete cPhiK0SInvMassProjection;
 
     // Calcola l'integrale della funzione prodotto nel range specificato
     x.setRange("signal", lowfitK0S, upfitK0S);

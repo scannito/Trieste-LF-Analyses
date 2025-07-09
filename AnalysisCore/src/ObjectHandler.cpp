@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 #include <string>
+#include <map>
 
 #include <rapidjson/document.h>
 
@@ -25,21 +26,14 @@
 #include "AnalysisUtils/FitFunctions.h"
 #include "AnalysisUtils/Plot.h"
 
-#include "AnalysisCore/include/ObjectHandler.h"
+#include "JSONReader.h"
+#include "ObjectHandler.h"
 
-
-ObjectHandler::ObjectHandler(const char* filename, const std::vector<std::string>& requiredKeys) : fRequiredKeys(requiredKeys) 
+ObjectHandler::ObjectHandler(const char* filename, const std::vector<std::string>& requiredKeys)
 { 
-    std::map<std::string, std::string> meta;
-    ReadFromJSON(meta, filename);
-    ObjectAcquisition(meta);
+    JSONReader jsonReader(filename, requiredKeys);
+    ObjectAcquisition(jsonReader.GetMeta());
     std::cout << "ObjectHandler initialized with file: " << filename << std::endl; 
-}
-ObjectHandler::~ObjectHandler()
-{
-    if (mTHnSparse)
-        delete mTHnSparse;
-
 }
 
 /*std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> ObjectHandler::GetSetHisto2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
@@ -98,96 +92,34 @@ void ObjectHandler::ExportProjections(const char* filename, int nbin_pT, const s
     file->Close();
 }
 
-void ObjectHandler::ReadFromJSON(std::map<std::string, std::string>& meta, const char* filename)
+void ObjectHandler::ObjectAcquisition(const std::map<std::string, std::string>& meta)
 {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open file for reading." << std::endl;
+    TFile* inputFile = TFile::Open(meta.at("inputFile").data());
+    if (!inputFile || inputFile->IsZombie()) {
+        std::cerr << "Error opening input file: " << meta.at("inputFile") << std::endl;
         return;
     }
 
-    std::string jsonStr((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
-    // Parse JSON
-    rapidjson::Document document;
-    document.Parse(jsonStr.data());
-
-    if (document.HasParseError()) {
-        std::cerr << "Error parsing JSON" << std::endl;
-        return;
-    }
-
-    // Convert JSON to std::map
-    for (auto itr = document.MemberBegin(); itr != document.MemberEnd(); ++itr) {
-        meta[itr->name.GetString()] = itr->value.GetString();
-    }
-
-    bool allKeysPresent = true;
-    for (const auto& key : fRequiredKeys) {
-        if (meta.find(key) == meta.end()) {
-            std::cerr << "Missing required key: " << key << std::endl;
-            allKeysPresent = false;
-        }
-    }
-
-    if (!allKeysPresent) {
-        std::cerr << "Please provide all required keys in the JSON file" << std::endl;
-    }
-}
-
-void ObjectHandler::ObjectAcquisition(std::map<std::string, std::string>& meta)
-{
-    TFile* file1 = TFile::Open(meta["inputFile"].data());
-    if (!file1 || file1->IsZombie()) {
-        std::cerr << "Error opening input file: " << meta["inputFile"] << std::endl;
-        return;
-    }
-    TDirectoryFile* phik0shortanalysis = (TDirectoryFile*)file1->Get(meta["analysisDir"].data());
-    if (!phik0shortanalysis) {
-        std::cerr << "Error retrieving analysis directory: " << meta["analysisDir"] << std::endl;
-        return;
-    }
-
-    TDirectoryFile* eventHist = (TDirectoryFile*)phik0shortanalysis->Get(meta["eventHistDir"].data());
-    if (!eventHist) {
-        std::cerr << "Error retrieving event histogram directory: " << meta["eventHistDir"] << std::endl;
-        return;
-    }
-
-    TH1F* hEventSelection = (TH1F*)eventHist->Get(meta["eventHistName"].data());
-    hEventSelection->SetDirectory(0);
-    Int_t binNumber = hEventSelection->GetXaxis()->FindBin(meta["binEventHistName"].data());
-    Double_t nEventsPhi = hEventSelection->GetBinContent(binNumber);
-
-    TDirectoryFile* PhiAssocHist = (TDirectoryFile*)phik0shortanalysis->Get(meta["PhiAssocDir"].data());
-    if (!PhiAssocHist) {
-        std::cerr << "Error retrieving Phi Assoc histogram directory: " << meta["PhiAssocDir"] << std::endl;
-        return;
-    }
-
-    THnSparseF* hnPhiAssoc = (THnSparseF*)PhiAssocHist->Get(meta["PhiAssocInvMassHistName"].data());
+    THnSparseF* hnPhiAssoc = (THnSparseF*)inputFile->Get(meta.at("objectPath").data());
     if (!hnPhiAssoc) {
-        std::cerr << "Error retrieving THnSparse: " << meta["PhiAssocInvMassHistName"] << std::endl;
+        std::cerr << "Error retrieving TObject: " << meta.at("objectPath") << std::endl;
         return;
     }
 
-    std::string outPath = meta["outputPath"];
-    std::string outFileName = meta["outputFile"];
+    mTHnSparse = std::unique_ptr<THnSparse>((THnSparseF*)hnPhiAssoc->Clone("hnPhiAssocClone"));
 
-    mTHnSparse = (THnSparseF*)hnPhiAssoc->Clone("hnPhiAssocClone");
-    mNEvents = nEventsPhi;
-    mOutPath = outPath;
-    mOutFileName = outFileName;
+    /*TH1F* hEventSelection = (TH1F*)eventHist->Get(meta.at("eventHistName").data());
+    hEventSelection->SetDirectory(0);
+    Int_t binNumber = hEventSelection->GetXaxis()->FindBin(meta.at("binEventHistName").data());
+    Double_t nEventsPhi = hEventSelection->GetBinContent(binNumber);*/
 
-    delete hEventSelection;
+    mOutFileName = meta.at("outputFile");
+
     delete hnPhiAssoc;
-    delete PhiAssocHist;
-    delete eventHist;
-    delete phik0shortanalysis;
-    file1->Close();
+    inputFile->Close();
 }
 
-TH2* ObjectHandler::Project2D(const char* hname, const std::vector<std::tuple<Int_t, Int_t, Int_t>>& axistocut, const std::pair<Int_t, Int_t>& axixtoproject, Option_t* option) 
+TH2* ObjectHandler::Project2D(const char* hname, const std::vector<AxisToCut>& axistocut, const std::pair<Int_t, Int_t>& axixtoproject, Option_t* option) 
 { 
     for (const auto [naxis, binlow, binup] : axistocut)
         mTHnSparse->GetAxis(naxis)->SetRange(binlow, binup);
@@ -198,7 +130,7 @@ TH2* ObjectHandler::Project2D(const char* hname, const std::vector<std::tuple<In
     return h2;
 }
 
-TH1* ObjectHandler::Project1D(const char* hname, const std::vector<std::tuple<Int_t, Int_t, Int_t>>& axistocut, Int_t axixtoproject, Option_t* option) 
+TH1* ObjectHandler::Project1D(const char* hname, const std::vector<AxisToCut>& axistocut, Int_t axixtoproject, Option_t* option) 
 { 
     for (const auto [naxis, binlow, binup] : axistocut)
         mTHnSparse->GetAxis(naxis)->SetRange(binlow, binup);
