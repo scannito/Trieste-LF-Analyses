@@ -147,16 +147,6 @@ void ObjectHandler::CheckValidMembers()
         std::cerr << "Error: mTHnSparse is not initialized." << std::endl;
     else
         std::cout << "mTHnSparse is valid." << std::endl;
-    
-    if (mNEvents <= 0)
-        std::cerr << "Error: mNEvents is not set or invalid." << std::endl;
-    else
-        std::cout << "mNEvents is valid: " << mNEvents << std::endl;
-
-    if (mOutPath.empty())
-        std::cerr << "Error: mOutPath is not set." << std::endl;
-    else
-        std::cout << "mOutPath is valid: " << mOutPath << std::endl;
 
     if (mOutFileName.empty())
         std::cerr << "Error: mOutFileName is not set." << std::endl;

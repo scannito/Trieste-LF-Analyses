@@ -15,6 +15,35 @@ add_subdirectory(AnalysisUtils)
 add_subdirectory(AnalysisCore)
 add_subdirectory(AnalysisSte)
 
+# Enable compile_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Define macro if it's an open source project
+add_compile_definitions(PVS_STUDIO_FREE)
+
+# PVS-Studio integration
+find_program(PVS_STUDIO_ANALYZER pvs-studio-analyzer)
+find_program(PLOG_CONVERTER plog-converter)
+
+if(PVS_STUDIO_ANALYZER AND PLOG_CONVERTER)
+  add_custom_target(pvs-analysis
+    COMMENT "Running PVS-Studio static analysis..."
+    COMMAND ${PVS_STUDIO_ANALYZER} analyze
+            -c ${CMAKE_BINARY_DIR}/compile_commands.json
+            -o ${CMAKE_BINARY_DIR}/PVS-Studio.log
+    COMMAND ${PLOG_CONVERTER} -a GA:1,2
+            -t text ${CMAKE_BINARY_DIR}/PVS-Studio.log
+            -o ${CMAKE_BINARY_DIR}/PVS-Studio.txt
+    COMMAND ${PLOG_CONVERTER} -a GA:1,2
+            -t sarif ${CMAKE_BINARY_DIR}/PVS-Studio.log
+            -o ${CMAKE_BINARY_DIR}/PVS-Studio.sarif
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  )
+else()
+  message(WARNING "PVS-Studio tools not found: pvs-analysis target will not be available.")
+endif()
+
+
 # Fetch rapidjson
 #include(FetchContent)
 #FetchContent_Declare(rapidjson GIT_REPOSITORY https://github.com/Tencent/rapidjson.git GIT_TAG master)

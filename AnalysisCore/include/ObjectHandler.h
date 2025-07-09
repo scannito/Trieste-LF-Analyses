@@ -35,7 +35,6 @@ public:
     //std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> GetSetHisto2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
     //std::array<std::vector<TH2*>, nbin_deltay> GetSetHistoMultInt2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
 
-    std::string GetOutPath() const { return mOutPath; }
     std::string GetOutFileName() const { return mOutFileName; }
 
     void ExportProjections(const char* filename, int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
