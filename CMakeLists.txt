@@ -39,17 +39,20 @@ if(PVS_STUDIO_ANALYZER AND PLOG_CONVERTER)
   add_custom_target(pvs-analysis
     COMMENT "Running PVS-Studio static analysis..."
     COMMAND ${PVS_STUDIO_ANALYZER} analyze
-            -license PVS-Studio-Free
             -f ${CMAKE_BINARY_DIR}/compile_commands.json
             -o ${CMAKE_BINARY_DIR}/PVS-Studio.log
-    COMMAND ${PLOG_CONVERTER} -a GA:1,2
-            -t text ${CMAKE_BINARY_DIR}/PVS-Studio.log
-            -o ${CMAKE_BINARY_DIR}/PVS-Studio.txt
-    COMMAND ${PLOG_CONVERTER} -a GA:1,2
-            -t sarif ${CMAKE_BINARY_DIR}/PVS-Studio.log
+    COMMAND ${PLOG_CONVERTER}
+            -a GA:1,2
+            -t html
+            -o ${CMAKE_BINARY_DIR}/PVS-Studio.html
+            ${CMAKE_BINARY_DIR}/PVS-Studio.log
+    COMMAND ${PLOG_CONVERTER}
+            -a GA:1,2
+            -t sarif
             -o ${CMAKE_BINARY_DIR}/PVS-Studio.sarif
+            ${CMAKE_BINARY_DIR}/PVS-Studio.log
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  )
+)
 else()
   message(WARNING "PVS-Studio tools not found: pvs-analysis target will not be available.")
 endif()
