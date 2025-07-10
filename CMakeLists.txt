@@ -25,11 +25,22 @@ add_compile_definitions(PVS_STUDIO_FREE)
 find_program(PVS_STUDIO_ANALYZER pvs-studio-analyzer)
 find_program(PLOG_CONVERTER plog-converter)
 
+# Symlink automatico di compile_commands.json nella root (se non già esistente)
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+      ${CMAKE_BINARY_DIR}/compile_commands.json
+      ${CMAKE_SOURCE_DIR}/compile_commands.json
+    RESULT_VARIABLE _symlink_result
+  )
+endif()
+
 if(PVS_STUDIO_ANALYZER AND PLOG_CONVERTER)
   add_custom_target(pvs-analysis
     COMMENT "Running PVS-Studio static analysis..."
     COMMAND ${PVS_STUDIO_ANALYZER} analyze
-            -c ${CMAKE_BINARY_DIR}/compile_commands.json
+            -license PVS-Studio-Free
+            -f ${CMAKE_BINARY_DIR}/compile_commands.json
             -o ${CMAKE_BINARY_DIR}/PVS-Studio.log
     COMMAND ${PLOG_CONVERTER} -a GA:1,2
             -t text ${CMAKE_BINARY_DIR}/PVS-Studio.log
