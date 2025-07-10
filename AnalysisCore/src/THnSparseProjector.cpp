@@ -27,16 +27,16 @@
 #include "AnalysisUtils/Plot.h"
 
 #include "JSONReader.h"
-#include "ObjectHandler.h"
+#include "THnSparseProjector.h"
 
-ObjectHandler::ObjectHandler(const char* filename, const std::vector<std::string>& requiredKeys)
+THnSparseProjector::THnSparseProjector(const char* filename, const std::vector<std::string>& requiredKeys)
 { 
     JSONReader jsonReader(filename, requiredKeys);
     ObjectAcquisition(jsonReader.GetMeta());
-    std::cout << "ObjectHandler initialized with file: " << filename << std::endl; 
+    std::cout << "THnSparseProjector initialized with file: " << filename << std::endl; 
 }
 
-/*std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> ObjectHandler::GetSetHisto2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
+/*std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> THnSparseProjector::GetSetHisto2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
 {
     std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> setHisto2D;
     for (int i = 1; i <= nbin_deltay; ++i) {
@@ -53,7 +53,7 @@ ObjectHandler::ObjectHandler(const char* filename, const std::vector<std::string
     return setHisto2D;
 }
 
-std::array<std::vector<TH2*>, nbin_deltay> ObjectHandler::GetSetHistoMultInt2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
+std::array<std::vector<TH2*>, nbin_deltay> THnSparseProjector::GetSetHistoMultInt2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
 {
     std::array<std::vector<TH2*>, nbin_deltay> setHistoMultInt2D;
     for (int i = 1; i <= nbin_deltay; ++i) {
@@ -68,12 +68,12 @@ std::array<std::vector<TH2*>, nbin_deltay> ObjectHandler::GetSetHistoMultInt2D(i
     return setHistoMultInt2D;
 }*/
 
-void ObjectHandler::ExportProjections(const char* filename, int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
+void THnSparseProjector::ExportProjections(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
 {
     std::map<std::string, std::string> meta;
-    TFile* file = TFile::Open(filename, "RECREATE");
-    if (!file || file->IsZombie()) {
-        std::cerr << "Error opening output file: " << filename << std::endl;
+    TFile* outputFile = TFile::Open(mOutputFileName.data(), "RECREATE");
+    if (!outputFile || outputFile->IsZombie()) {
+        std::cerr << "Error opening output file: " << mOutputFileName << std::endl;
         return;
     }
 
@@ -89,10 +89,11 @@ void ObjectHandler::ExportProjections(const char* filename, int nbin_pT, const s
         }
     }
 
-    file->Close();
+    outputFile->Close();
+    delete outputFile;
 }
 
-void ObjectHandler::ObjectAcquisition(const std::map<std::string, std::string>& meta)
+void THnSparseProjector::ObjectAcquisition(const std::map<std::string, std::string>& meta)
 {
     TFile* inputFile = TFile::Open(meta.at("inputFile").data());
     if (!inputFile || inputFile->IsZombie()) {
@@ -113,13 +114,15 @@ void ObjectHandler::ObjectAcquisition(const std::map<std::string, std::string>& 
     Int_t binNumber = hEventSelection->GetXaxis()->FindBin(meta.at("binEventHistName").data());
     Double_t nEventsPhi = hEventSelection->GetBinContent(binNumber);*/
 
-    mOutFileName = meta.at("outputFile");
+    mOutputFileName = meta.at("outputFile");
 
     delete hnPhiAssoc;
+
     inputFile->Close();
+    delete inputFile;
 }
 
-TH2* ObjectHandler::Project2D(const char* hname, const std::vector<AxisToCut>& axistocut, const std::pair<Int_t, Int_t>& axixtoproject, Option_t* option) 
+TH2* THnSparseProjector::Project2D(const char* hname, const std::vector<AxisToCut>& axistocut, const std::pair<Int_t, Int_t>& axixtoproject, Option_t* option) 
 { 
     for (const auto [naxis, binlow, binup] : axistocut)
         mTHnSparse->GetAxis(naxis)->SetRange(binlow, binup);
@@ -130,7 +133,7 @@ TH2* ObjectHandler::Project2D(const char* hname, const std::vector<AxisToCut>& a
     return h2;
 }
 
-TH1* ObjectHandler::Project1D(const char* hname, const std::vector<AxisToCut>& axistocut, Int_t axixtoproject, Option_t* option) 
+TH1* THnSparseProjector::Project1D(const char* hname, const std::vector<AxisToCut>& axistocut, Int_t axixtoproject, Option_t* option) 
 { 
     for (const auto [naxis, binlow, binup] : axistocut)
         mTHnSparse->GetAxis(naxis)->SetRange(binlow, binup);
@@ -141,15 +144,15 @@ TH1* ObjectHandler::Project1D(const char* hname, const std::vector<AxisToCut>& a
     return h2;
 }
 
-void ObjectHandler::CheckValidMembers()
+void THnSparseProjector::CheckValidMembers()
 {
     if (!mTHnSparse)
         std::cerr << "Error: mTHnSparse is not initialized." << std::endl;
     else
         std::cout << "mTHnSparse is valid." << std::endl;
 
-    if (mOutFileName.empty())
+    if (mOutputFileName.empty())
         std::cerr << "Error: mOutFileName is not set." << std::endl;
     else
-        std::cout << "mOutFileName is valid: " << mOutFileName << std::endl;
+        std::cout << "mOutFileName is valid: " << mOutputFileName << std::endl;
 }

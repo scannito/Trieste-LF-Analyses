@@ -23,28 +23,28 @@
 #include <string>
 #include <memory>
 
-class ObjectHandler
+class THnSparseProjector
 {
     using AxisToCut = std::tuple<Int_t, Int_t, Int_t>; // Axis, bin low, bin up
 
 public:
-    ObjectHandler() = default;
-    ObjectHandler(const char* filename, const std::vector<std::string>& requiredKeys);
-    ~ObjectHandler() = default;
+    THnSparseProjector() = default;
+    THnSparseProjector(const char* filename, const std::vector<std::string>& requiredKeys);
+    ~THnSparseProjector() = default;
 
     //std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> GetSetHisto2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
     //std::array<std::vector<TH2*>, nbin_deltay> GetSetHistoMultInt2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
 
-    std::string GetOutFileName() const { return mOutFileName; }
+    std::string GetOutFileName() const { return mOutputFileName; }
 
-    void ExportProjections(const char* filename, int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
+    void ExportProjections(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
 
     void CheckValidMembers();
 
 private:
     std::unique_ptr<THnSparse> mTHnSparse;
 
-    std::string mOutFileName;
+    std::string mOutputFileName;
 
     void ObjectAcquisition(const std::map<std::string, std::string>& meta);
 

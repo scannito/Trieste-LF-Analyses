@@ -17,7 +17,7 @@
 
 #include "AnalysisUtils/Parameters.h"
 
-#include "ObjectHandler.h"
+#include "THnSparseProjector.h"
 
 int main(int argc, char* argv[])
 {
@@ -28,13 +28,12 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    std::vector<std::string> requiredKeys = {"inputFile", "analysisDir", "eventHistDir", "eventHistName", "binEventHistName", 
-                                             "PhiAssocDir", "PhiAssocInvMassHistName", "outputPath", "outputFile"};
+    std::vector<std::string> requiredKeys = {"inputFile", "objectPath", "outputFile"};
 
-    ObjectHandler objectHandlerPhiK0S(argv[1], requiredKeys);
-    objectHandlerPhiK0S.ExportProjections("../AnalysisSte/data/PhiK0SAnalysisProjections.root", nbin_pT::K0S, "h2PhiK0SInvMass", {4, 3});
+    THnSparseProjector THnSparseProjectorPhiK0S(argv[1], requiredKeys);
+    THnSparseProjectorPhiK0S.ExportProjections(nbin_pT::K0S, "h2PhiK0SInvMass", {4, 3});
 
-    ObjectHandler objectHandlerPhiPi(argv[2], requiredKeys);
-    objectHandlerPhiPi.ExportProjections("../AnalysisSte/data/PhiPiTPCAnalysisProjections.root", nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC", {5, 3});
-    objectHandlerPhiPi.ExportProjections("../AnalysisSte/data/PhiPiTOFAnalysisProjections.root", nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF", {5, 4});
+    THnSparseProjector THnSparseProjectorPhiPi(argv[2], requiredKeys);
+    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC", {5, 3});
+    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF", {5, 4});
 }
