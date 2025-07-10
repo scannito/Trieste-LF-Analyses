@@ -25,6 +25,11 @@ int main(int argc, char* argv[])
 
     std::cout << "Starting Phi K0S Analysis..." << std::endl;
 
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <input_file.json>" << std::endl;
+        return 1;
+    }
+
     std::array<std::array<TH1*, nbin_mult>, nbin_deltay> h1PhiK0SYield;
     std::array<std::array<TH1*, nbin_mult>, nbin_deltay> h1PhiPiTPCYield;
     std::array<std::array<TH1*, nbin_mult>, nbin_deltay> h1PhiPiTOFYield;

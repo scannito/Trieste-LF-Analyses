@@ -23,6 +23,11 @@ int main(int argc, char* argv[])
 {
     std::cout << "Starting Phi K0S Analysis..." << std::endl;
 
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <input_file.json>" << std::endl;
+        return 1;
+    }
+
     LFInvMassFitter PhiK0SFitter("K0S", "../../AnalysisSte/data/PhiK0SAnalysisProjections.root", nbin_pT::K0S, "h2PhiK0SInvMass");
     PhiK0SFitter.ExportYields("../../AnalysisSte/data/PhiK0SYields.root", nbin_pT::K0S, pT_axis::K0S, "h1PhiK0SYield", 0);
 
