@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 #include <string>
+#include <memory>
 #include <map>
 
 #include <rapidjson/document.h>
@@ -32,7 +33,7 @@
 THnSparseProjector::THnSparseProjector(const char* filename, const std::vector<std::string>& requiredKeys)
 { 
     JSONReader jsonReader(filename, requiredKeys);
-    ObjectAcquisition(jsonReader.GetMeta());
+    THnSparseAcquisition(jsonReader.GetMeta());
     std::cout << "THnSparseProjector initialized with file: " << filename << std::endl; 
 }
 
@@ -70,7 +71,6 @@ std::array<std::vector<TH2*>, nbin_deltay> THnSparseProjector::GetSetHistoMultIn
 
 void THnSparseProjector::ExportProjections(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
 {
-    std::map<std::string, std::string> meta;
     TFile* outputFile = TFile::Open(mOutputFileName.data(), "RECREATE");
     if (!outputFile || outputFile->IsZombie()) {
         std::cerr << "Error opening output file: " << mOutputFileName << std::endl;
@@ -93,7 +93,7 @@ void THnSparseProjector::ExportProjections(int nbin_pT, const std::string& hSetN
     delete outputFile;
 }
 
-void THnSparseProjector::ObjectAcquisition(const std::map<std::string, std::string>& meta)
+void THnSparseProjector::THnSparseAcquisition(const std::map<std::string, std::string>& meta)
 {
     TFile* inputFile = TFile::Open(meta.at("inputFile").data());
     if (!inputFile || inputFile->IsZombie()) {
@@ -101,13 +101,12 @@ void THnSparseProjector::ObjectAcquisition(const std::map<std::string, std::stri
         return;
     }
 
-    THnSparseF* hnPhiAssoc = (THnSparseF*)inputFile->Get(meta.at("objectPath").data());
-    if (!hnPhiAssoc) {
+    THnSparse* tempTHnSparse = (THnSparse*)inputFile->Get(meta.at("objectPath").data());
+    if (!tempTHnSparse) {
         std::cerr << "Error retrieving TObject: " << meta.at("objectPath") << std::endl;
         return;
     }
-
-    mTHnSparse = std::unique_ptr<THnSparse>((THnSparseF*)hnPhiAssoc->Clone("hnPhiAssocClone"));
+    mTHnSparse = std::unique_ptr<THnSparse>((THnSparse*)tempTHnSparse->Clone("Clone"));
 
     /*TH1F* hEventSelection = (TH1F*)eventHist->Get(meta.at("eventHistName").data());
     hEventSelection->SetDirectory(0);
@@ -116,7 +115,7 @@ void THnSparseProjector::ObjectAcquisition(const std::map<std::string, std::stri
 
     mOutputFileName = meta.at("outputFile");
 
-    delete hnPhiAssoc;
+    delete tempTHnSparse;
 
     inputFile->Close();
     delete inputFile;
@@ -144,7 +143,7 @@ TH1* THnSparseProjector::Project1D(const char* hname, const std::vector<AxisToCu
     return h2;
 }
 
-void THnSparseProjector::CheckValidMembers()
+/*void THnSparseProjector::CheckValidMembers()
 {
     if (!mTHnSparse)
         std::cerr << "Error: mTHnSparse is not initialized." << std::endl;
@@ -155,4 +154,4 @@ void THnSparseProjector::CheckValidMembers()
         std::cerr << "Error: mOutFileName is not set." << std::endl;
     else
         std::cout << "mOutFileName is valid: " << mOutputFileName << std::endl;
-}
+}*/

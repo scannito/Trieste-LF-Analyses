@@ -22,6 +22,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <map>
 
 class THnSparseProjector
 {
@@ -35,18 +36,16 @@ public:
     //std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> GetSetHisto2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
     //std::array<std::vector<TH2*>, nbin_deltay> GetSetHistoMultInt2D(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
 
-    std::string GetOutFileName() const { return mOutputFileName; }
-
     void ExportProjections(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
 
-    void CheckValidMembers();
+    //void CheckValidMembers();
 
 private:
     std::unique_ptr<THnSparse> mTHnSparse;
 
     std::string mOutputFileName;
 
-    void ObjectAcquisition(const std::map<std::string, std::string>& meta);
+    void THnSparseAcquisition(const std::map<std::string, std::string>& meta);
 
     TH2* Project2D(const char* hname, const std::vector<AxisToCut>& axistocut, const std::pair<Int_t, Int_t>& axixtoproject, Option_t* option = "");
     TH1* Project1D(const char* hname, const std::vector<AxisToCut>& axistocut, Int_t axixtoproject, Option_t* option = "");
