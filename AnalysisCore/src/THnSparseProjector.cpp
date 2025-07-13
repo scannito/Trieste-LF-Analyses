@@ -106,7 +106,10 @@ void THnSparseProjector::THnSparseAcquisition(const std::map<std::string, std::s
         std::cerr << "Error retrieving TObject: " << meta.at("objectPath") << std::endl;
         return;
     }
-    mTHnSparse = std::unique_ptr<THnSparse>((THnSparse*)tempTHnSparse->Clone("Clone"));
+    THnSparse* cloneTHnSparse = (THnSparse*)tempTHnSparse->Clone("CloneTHnSparse");
+    cloneTHnSparse->SetDirectory(0);
+    mTHnSparse.reset(cloneTHnSparse);
+    std::cout << "Directory of cloned THnSparse: " << mTHnSparse->GetDirectory() << std::endl;
 
     /*TH1F* hEventSelection = (TH1F*)eventHist->Get(meta.at("eventHistName").data());
     hEventSelection->SetDirectory(0);
@@ -114,8 +117,6 @@ void THnSparseProjector::THnSparseAcquisition(const std::map<std::string, std::s
     Double_t nEventsPhi = hEventSelection->GetBinContent(binNumber);*/
 
     mOutputFileName = meta.at("outputFile");
-
-    delete tempTHnSparse;
 
     inputFile->Close();
     delete inputFile;

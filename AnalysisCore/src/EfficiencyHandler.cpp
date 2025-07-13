@@ -31,33 +31,38 @@ void EfficiencyHandler::HistogramsAcquisition(const std::map<std::string, std::s
         std::cerr << "Error retrieving TObject: " << meta.at("recoPath") << std::endl;
         return;
     }
-    mRecoHistogram = std::unique_ptr<TH3>((TH3*)tempRecoHistogram->Clone("CloneReco"));
+    TH3* cloneReco = (TH3*)tempRecoHistogram->Clone("CloneReco");
+    cloneReco->SetDirectory(0);
+    mRecoHistogram.reset(cloneReco);
+    std::cout << "Directory of cloned reco histogram: " << mRecoHistogram->GetDirectory() << std::endl;
 
     TH3* tempGenHistogram = (TH3*)inputFile->Get(meta.at("genPath").data());
     if (!tempGenHistogram) {
         std::cerr << "Error retrieving TObject: " << meta.at("genPath") << std::endl;
         return;
     }
-    mGenHistogram = std::unique_ptr<TH3>((TH3*)tempGenHistogram->Clone("CloneGen"));
+    TH3* cloneGen = (TH3*)tempGenHistogram->Clone("CloneGen");
+    cloneGen->SetDirectory(0);
+    mGenHistogram.reset(cloneGen);
+    std::cout << "Directory of cloned gen histogram: " << mGenHistogram->GetDirectory() << std::endl;
 
     TH3* tempGenAssocRecoHistogram = (TH3*)inputFile->Get(meta.at("genAssocRecoPath").data());
     if (!tempGenAssocRecoHistogram) {
         std::cerr << "Error retrieving TObject: " << meta.at("genAssocRecoPath") << std::endl;
         return;
     }
-    mGenAssocRecoHistogram = std::unique_ptr<TH3>((TH3*)tempGenAssocRecoHistogram->Clone("CloneGenAssocReco"));
+    TH3* cloneGenAssocReco = (TH3*)tempGenAssocRecoHistogram->Clone("CloneGenAssocReco");
+    cloneGenAssocReco->SetDirectory(0);
+    mGenAssocRecoHistogram.reset(cloneGenAssocReco);
+    std::cout << "Directory of cloned gen assoc reco histogram: " << mGenAssocRecoHistogram->GetDirectory() << std::endl;
 
     mOutputFileName = meta.at("outputFile");
-
-    delete tempRecoHistogram;
-    delete tempGenHistogram;
-    delete tempGenAssocRecoHistogram;
 
     inputFile->Close();
     delete inputFile;
 }
 
-void EfficiencyHandler::ExportCorrection()
+void EfficiencyHandler::ExportCorrections()
 {
     TFile* outputFile = TFile::Open(mOutputFileName.data(), "RECREATE");
     if (!outputFile || outputFile->IsZombie()) {
@@ -77,19 +82,53 @@ void EfficiencyHandler::ExportCorrection()
         delete signalLossHist;
     }
 
-    TH3* combinedHist = GetCombinedEfficiencyHistogram();
-    if (combinedHist) {
-        combinedHist->Write();
-        delete combinedHist;
+    TH3* combinedEffHist = GetCombinedEfficiencyHistogram();
+    if (combinedEffHist) {
+        combinedEffHist->Write();
+        delete combinedEffHist;
     }
 
     outputFile->Close();
     delete outputFile;
 }
 
+void EfficiencyHandler::ExportCorrectionsForCCDB()
+{
+    TFile* outputFile = TFile::Open(mOutputFileName.data(), "UPDATE");
+    if (!outputFile || outputFile->IsZombie()) {
+        outputFile = TFile::Open(mOutputFileName.data(), "RECREATE");
+    }
+
+    TList* outputList = (TList*)outputFile->Get("ccdb_object");
+    if (!outputList) {
+        outputList = new TList();
+        outputList->SetName("ccdb_object");
+    }
+
+    TH3* combinedEffHist = GetCombinedEfficiencyHistogram();
+    if (combinedEffHist) {
+        outputList->Add(combinedEffHist);
+    }
+
+    outputFile->cd();
+    outputList->Write("ccdb_object", TObject::kOverwrite | TObject::kSingleKey);
+    outputFile->Close();
+    delete outputList;
+    delete outputFile;
+}
+
 TH3* EfficiencyHandler::GetEfficiencyHistogram()
 {
+    std::cout << "Calculating efficiency histogram..." << std::endl;
+    if (!mRecoHistogram || !mGenAssocRecoHistogram) {
+        std::cerr << "Error: Reco or GenAssocReco histogram is not initialized." << std::endl;
+        return nullptr;
+    } else {
+        std::cout << "Reco and GenAssocReco histograms are initialized." << std::endl;
+        std::cout << "Cloning histogram: " << mRecoHistogram->GetName() << std::endl;
+    }
     TH3* efficiencyHist = (TH3*)mRecoHistogram->Clone("EfficiencyHistogram");
+    std::cout << "Efficiency histogram cloned." << std::endl;
     efficiencyHist->Divide(mRecoHistogram.get(), mGenAssocRecoHistogram.get(), 1, 1, "B");
 
     return efficiencyHist;

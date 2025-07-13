@@ -15,7 +15,8 @@ public:
     EfficiencyHandler(const char* filename, const std::vector<std::string>& requiredKeys);
     ~EfficiencyHandler() = default;
 
-    void ExportCorrection();
+    void ExportCorrections();
+    void ExportCorrectionsForCCDB();
 
 private:
     std::unique_ptr<TH3> mRecoHistogram;

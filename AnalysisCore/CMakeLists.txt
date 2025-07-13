@@ -20,6 +20,11 @@ target_include_directories(LFInvMassFitter PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/in
 # Link ROOT to the FitterDict library
 target_link_libraries(LFInvMassFitter PUBLIC AnalysisUtils ${ROOT_LIBRARIES})
 
-# Copy the .pcm file to the build directory
-add_custom_command(TARGET LFInvMassFitter POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                   ${CMAKE_CURRENT_BINARY_DIR}/libLFInvMassFitter_rdict.pcm ${CMAKE_BINARY_DIR}/libLFInvMassFitter_rdict.pcm)
+set(RDICT_TARGET_DIRS AnalysisSte)
+set(RDICT_FILE ${CMAKE_CURRENT_BINARY_DIR}/libLFInvMassFitter_rdict.pcm)
+
+# Copy the .pcm file to the each build subdirectory in which is needed 
+foreach(_dir IN LISTS RDICT_TARGET_DIRS)
+  add_custom_command(TARGET LFInvMassFitter POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+                     ${RDICT_FILE} ${CMAKE_BINARY_DIR}/${_dir}/libLFInvMassFitter_rdict.pcm)
+endforeach()

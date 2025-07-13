@@ -1,4 +1,5 @@
 #include "Riostream.h"
+#include "TApplication.h"
 #include "TFile.h"
 #include "TLegend.h"
 #include "TH1F.h"
@@ -29,6 +30,8 @@ int runEfficiencyHandler(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
+    //TApplication app("PhiK0SAnalysis", &argc, argv);
+
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <mode> [args...]\n"
                   << "Available modes:\n"
@@ -39,24 +42,26 @@ int main(int argc, char* argv[])
 
     std::string mode = argv[1];
 
-    std::cout << "Executing step" << mode << "of Phi-K0S rapidity correlation analysis\n";
+    std::cout << "Executing step " << mode << " of Phi-K0S rapidity correlation analysis\n";
 
     if (mode == "projector") {
-        return runProjector(argc - 1, &argv[1]);  // Shift args so that argv[0] = "projector/fitter/effiency"
+        return runTHnSparseProjector(argc - 1, &argv[1]);  // Shift args so that argv[0] = "projector/fitter/effiency"
     } else if (mode == "fitter") {
-        return runFitter(argc - 1, &argv[1]);
+        return runLFInvMassFitter(argc - 1, &argv[1]);
     } else if (mode == "efficiency") {
         return runEfficiencyHandler(argc - 1, &argv[1]);
     } else {
         std::cerr << "Unknown mode: " << mode << "\n";
         return 1;
     }
+
+    //app.Run();
 }
 
 int runTHnSparseProjector(int argc, char* argv[])
 {
-    if (argc < 3) {
-        std::cerr << "Usage: projector <input1.json> <input2.json>\n";
+    if (argc < 2) {
+        std::cerr << "Usage: projector <inputK0S.json> <inputPi.json>\n";
         return 1;
     }
 
@@ -89,20 +94,23 @@ int runLFInvMassFitter(int argc, char* argv[])
 int runEfficiencyHandler(int argc, char* argv[])
 {
     if (argc < 2) {
-        std::cerr << "Usage: efficiency <inputFile.json>\n";
+        std::cerr << "Usage: efficiency <inputPhi.json> <inputK0S.json> <inputPi.json>\n";
         return 1;
     }
 
-    std::vector<std::string> requiredKeys = {"inputFile", "outputFile"};
+    std::vector<std::string> requiredKeys = {"inputFile", "recoPath", "genPath", "genAssocRecoPath", "outputFile"};
 
     EfficiencyHandler PhiEfficiencyHandler(argv[1], requiredKeys);
-    PhifficiencyHandler.ExportCorrection();
+    PhiEfficiencyHandler.ExportCorrections();
+    //PhiEfficiencyHandler.ExportCorrectionsForCCDB();
 
-    EffiencyHandler K0SEfficiencyHandler(argv[2], requiredKeys);
-    K0SEfficiencyHandler.ExportCorrection();
+    //EfficiencyHandler K0SEfficiencyHandler(argv[2], requiredKeys);
+    //K0SEfficiencyHandler.ExportCorrections();
+    //K0SEfficiencyHandler.ExportCorrectionsForCCDB();
 
-    EfficiencyHandler PiEfficiencyHandler(argv[3], requiredKeys);
-    PiEfficiencyHandler.ExportCorrection();
+    //EfficiencyHandler PiEfficiencyHandler(argv[3], requiredKeys);
+    //PiEfficiencyHandler.ExportCorrections();
+    //PiEfficiencyHandler.ExportCorrectionsForCCDB();
 
     return 0;
 }

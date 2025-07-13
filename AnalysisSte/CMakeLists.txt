@@ -1,6 +1,15 @@
-# Copy config.json files from AnalysisSte to build directory
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configK0S.json ${CMAKE_BINARY_DIR}/configK0S.json COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configPi.json ${CMAKE_BINARY_DIR}/configPi.json COPYONLY)
+# Cerca tutti i file JSON che iniziano per config nel source dir (AnalysisSte/JSONConfigs)
+file(GLOB CONFIG_JSON_FILES "${CMAKE_CURRENT_SOURCE_DIR}/JSONConfigs/config*.json")
+
+# Copy all found JSON files to build/AnalysisSte directory
+set(CONFIG_DST_DIR "${CMAKE_BINARY_DIR}/AnalysisSte")
+file(MAKE_DIRECTORY ${CONFIG_DST_DIR})
+
+# Cicla su ciascun file trovato
+foreach(json_file ${CONFIG_JSON_FILES})
+    get_filename_component(json_name ${json_file} NAME)
+    configure_file(${json_file} ${CONFIG_DST_DIR}/${json_name} COPYONLY)
+endforeach()
 
 set(ANALYSIS_CORE "${CMAKE_SOURCE_DIR}/AnalysisCore")
 set(RAPIDJSON "${CMAKE_SOURCE_DIR}/Thirdparty/rapidjson/include")
