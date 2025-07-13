@@ -69,7 +69,7 @@ std::array<std::vector<TH2*>, nbin_deltay> THnSparseProjector::GetSetHistoMultIn
     return setHistoMultInt2D;
 }*/
 
-void THnSparseProjector::ExportProjections(int nbin_pT, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
+void THnSparseProjector::ExportProjections(int nbin_pT, const std::vector<AxisCut>& slicing, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
 {
     TFile* outputFile = TFile::Open(mOutputFileName.data(), "RECREATE");
     if (!outputFile || outputFile->IsZombie()) {
@@ -77,7 +77,28 @@ void THnSparseProjector::ExportProjections(int nbin_pT, const std::string& hSetN
         return;
     }
 
-    for (int i = 1; i <= nbin_deltay; ++i) {
+    auto cutSets = ExpandAxisCuts(slicing);
+
+    for (const auto& combo : cutSets) {
+        std::cout << "Writing histogram for bins:";
+        std::string hName = hSetName;
+        for (const auto& cut : combo) {
+            std::cout << " axis " << cut.axis << " bin " << cut.binLow << ",";
+            hName += "_" + std::to_string(cut.binLow);
+        }
+        std::cout << std::endl;
+
+        TH2* h2 = Project2D(hName.c_str(), combo, axixtoproject);
+
+        if (h2) {
+            h2->Write();
+            delete h2;
+        } else {
+            std::cerr << "Warning: failed to project histogram " << hName << "\n";
+        }
+    }
+
+    /*for (int i = 1; i <= nbin_deltay; ++i) {
         for (int j = 0; j < nbin_mult; ++j) {
             for (int k = 0; k < nbin_pT; ++k) {
                 std::cout << "Writing histogram for delta y bin: " << i << ", mult bin: " << j << ", pT bin: " << k << std::endl;
@@ -87,7 +108,7 @@ void THnSparseProjector::ExportProjections(int nbin_pT, const std::string& hSetN
                 delete h2;
             }
         }
-    }
+    }*/
 
     outputFile->Close();
     delete outputFile;
@@ -107,9 +128,7 @@ void THnSparseProjector::THnSparseAcquisition(const std::map<std::string, std::s
         return;
     }
     THnSparse* cloneTHnSparse = (THnSparse*)tempTHnSparse->Clone("CloneTHnSparse");
-    cloneTHnSparse->SetDirectory(0);
     mTHnSparse.reset(cloneTHnSparse);
-    std::cout << "Directory of cloned THnSparse: " << mTHnSparse->GetDirectory() << std::endl;
 
     /*TH1F* hEventSelection = (TH1F*)eventHist->Get(meta.at("eventHistName").data());
     hEventSelection->SetDirectory(0);
@@ -122,10 +141,10 @@ void THnSparseProjector::THnSparseAcquisition(const std::map<std::string, std::s
     delete inputFile;
 }
 
-TH2* THnSparseProjector::Project2D(const char* hname, const std::vector<AxisToCut>& axistocut, const std::pair<Int_t, Int_t>& axixtoproject, Option_t* option) 
+TH2* THnSparseProjector::Project2D(const char* hname, const std::vector<AxisCut>& axiscut, const std::pair<Int_t, Int_t>& axixtoproject, Option_t* option) 
 { 
-    for (const auto [naxis, binlow, binup] : axistocut)
-        mTHnSparse->GetAxis(naxis)->SetRange(binlow, binup);
+    for (const auto& cut : axiscut)
+        mTHnSparse->GetAxis(cut.axis)->SetRange(cut.binLow, cut.binHigh);
 
     TH2* h2 = (TH2*)mTHnSparse->Projection(axixtoproject.first, axixtoproject.second, option);
     h2->SetName(hname);
@@ -133,10 +152,10 @@ TH2* THnSparseProjector::Project2D(const char* hname, const std::vector<AxisToCu
     return h2;
 }
 
-TH1* THnSparseProjector::Project1D(const char* hname, const std::vector<AxisToCut>& axistocut, Int_t axixtoproject, Option_t* option) 
+TH1* THnSparseProjector::Project1D(const char* hname, const std::vector<AxisCut>& axiscut, Int_t axixtoproject, Option_t* option) 
 { 
-    for (const auto [naxis, binlow, binup] : axistocut)
-        mTHnSparse->GetAxis(naxis)->SetRange(binlow, binup);
+    for (const auto& cut : axiscut)
+        mTHnSparse->GetAxis(cut.axis)->SetRange(cut.binLow, cut.binHigh);
 
     TH2* h2 = (TH2*)mTHnSparse->Projection(axixtoproject, option);
     h2->SetName(hname);
