@@ -18,6 +18,8 @@
 #include <utility>
 #include <vector>
 #include <string>
+#include <memory>
+#include <map>
 
 #include "RooRealVar.h"
 #include "RooDataHist.h"
@@ -630,11 +632,11 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiAssoc(TH2* h2PhiAssocInvMas
     }
 }
 
-void LFInvMassFitter::ExportYields(const char* filename, Int_t nbin_pT, const std::vector<Double_t>& pT_axis, const std::string& hSetName, Int_t isTPCOrTOF) 
+void LFInvMassFitter::ExportYields(Int_t nbin_pT, const std::vector<Double_t>& pT_axis, const std::string& hSetName, Int_t isTPCOrTOF) 
 {
-    TFile* outputFile = TFile::Open(filename, "RECREATE");
+    std::unique_ptr<TFile> outputFile(TFile::Open(mOutputFileName.c_str(), "RECREATE"));
     if (!outputFile || outputFile->IsZombie()) {
-        std::cerr << "Error opening output file: " << filename << std::endl;
+        std::cerr << "Error opening output file: " << mOutputFileName << std::endl;
         return;
     }
     
@@ -646,7 +648,7 @@ void LFInvMassFitter::ExportYields(const char* filename, Int_t nbin_pT, const st
 
             for (int k = 0; k < nbin_pT; k++) {
                 std::cout << "Processing bin: " << i << ", " << j << ", " << k << std::endl;
-                auto [PhiAssocYieldpTdiff, errPhiAssocYieldpTdiff] = FitPhiAssoc(mSetHisto2D[i][j][k], {i, j, k}, isTPCOrTOF, mMode, outputFile);
+                auto [PhiAssocYieldpTdiff, errPhiAssocYieldpTdiff] = FitPhiAssoc(mSetHisto2D[i][j][k], {i, j, k}, isTPCOrTOF, mMode, outputFile.get());
                 PhiAssocYieldpTdiff /= deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pT_axis[k+1] - pT_axis[k]) /*/ mNEvents*/;
                 errPhiAssocYieldpTdiff /= deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pT_axis[k+1] - pT_axis[k]) /*/ mNEvents*/;
 
@@ -661,8 +663,6 @@ void LFInvMassFitter::ExportYields(const char* filename, Int_t nbin_pT, const st
             delete h1PhiAssocYield;
         }
     }
-
-    outputFile->Close();
 }
 
 /*void LFInvMassFitter::CheckValidMembers()

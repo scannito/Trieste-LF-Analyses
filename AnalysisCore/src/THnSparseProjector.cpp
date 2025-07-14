@@ -39,7 +39,7 @@ THnSparseProjector::THnSparseProjector(const char* filename, const std::vector<s
 
 void THnSparseProjector::ExportProjections(int nbin_pT, const std::vector<AxisCut>& slicing, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
 {
-    TFile* outputFile = TFile::Open(mOutputFileName.c_str(), "RECREATE");
+    std::unique_ptr<TFile> outputFile = std::unique_ptr<TFile>(TFile::Open(mOutputFileName.c_str(), "RECREATE"));
     if (!outputFile || outputFile->IsZombie()) {
         std::cerr << "Error opening output file: " << mOutputFileName << std::endl;
         return;
@@ -77,9 +77,6 @@ void THnSparseProjector::ExportProjections(int nbin_pT, const std::vector<AxisCu
             }
         }
     }*/
-
-    outputFile->Close();
-    delete outputFile;
 }
 
 void THnSparseProjector::THnSparseAcquisition(const std::map<std::string, std::string>& meta)

@@ -38,9 +38,9 @@ inline std::string PartToSymbol(ParticleType assoc)
     switch (assoc) {
         case ParticleType::Phi: return "#phi";
         case ParticleType::K0S: return "K^{0}_{S}";
-        case ParticleType::Pi: return "#pi";
+        case ParticleType::Pi: return "#pi^{+}+#pi^{#minus}";
         case ParticleType::PhiK0S: return "#phi-K^{0}_{S}";
-        case ParticleType::PhiPi: return "#phi-#pi";
+        case ParticleType::PhiPi: return "#phi-(#pi^{+}+#pi^{#minus})";
         default: return "Unknown";
     }
 }

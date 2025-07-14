@@ -91,14 +91,14 @@ int runLFInvMassFitter(int argc, char* argv[])
     std::vector<std::string> requiredKeys = {"inputFile", "objectsPath", "outputFile"};
 
     std::vector<AxisCut> slicingK0S = {  };
-    LFInvMassFitter PhiK0SFitter("K0S", "../../AnalysisSte/data/PhiK0SAnalysisProjections.root", requiredKeys, slicingK0S, nbin_pT::K0S, "h2PhiK0SInvMass");
-    PhiK0SFitter.ExportYields("../../AnalysisSte/data/PhiK0SYields.root", nbin_pT::K0S, pT_axis::K0S, "h1PhiK0SYield", 0);
+    LFInvMassFitter PhiK0SFitter("Phi-K0S", argv[1], requiredKeys, slicingK0S, nbin_pT::K0S, "h2PhiK0SInvMass");
+    PhiK0SFitter.ExportYields(nbin_pT::K0S, pT_axis::K0S, "h1PhiK0SYield", 0);
 
-    //LFInvMassFitter PhiPiTPCFitter("Pi", "../../AnalysisSte/data/PhiPiTPCAnalysisProjections.root", nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC");
-    //PhiPiTPCFitter.ExportYields("../../AnalysisSte/data/PhiPiTPCYields.root", nbin_pT::Pi, pT_axis::Pi, "h1PhiPiTPCYield", 0);
-
-    //LFInvMassFitter PhiPiTOFFitter("Pi", "../../AnalysisSte/data/PhiPiTOFAnalysisProjections.root", nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF");
-    //PhiPiTOFFitter.ExportYields("../../AnalysisSte/data/PhiPiTOFYields.root", nbin_pT::Pi, pT_axis::Pi, "h1PhiPiTOFYield", 1);
+    std::vector<AxisCut> slicingPi = {  };
+    LFInvMassFitter PhiPiTPCFitter("Phi-Pi", argv[2], requiredKeys, slicingPi, nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC");
+    PhiPiTPCFitter.ExportYields(nbin_pT::Pi, pT_axis::Pi, "h1PhiPiTPCYield", 0);
+    LFInvMassFitter PhiPiTOFFitter("Phi-Pi", argv[2], requiredKeys, slicingPi, nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF");
+    PhiPiTOFFitter.ExportYields(nbin_pT::Pi, pT_axis::Pi, "h1PhiPiTOFYield", 1);
     
     return 0;
 }
@@ -110,17 +110,19 @@ int runEfficiencyHandler(int argc, char* argv[])
         return 1;
     }
 
-    std::vector<std::string> requiredKeys = {"inputFile", "recoPath", "genPath", "genAssocRecoPath", "outputFile"};
+    std::vector<std::string> requiredKeys1 = {"inputFile", "recoPath", "genPath", "genAssocRecoPath", "outputFile"};
 
-    EfficiencyHandler PhiEfficiencyHandler(argv[1], requiredKeys);
+    EfficiencyHandler PhiEfficiencyHandler("Phi", argv[1], requiredKeys1);
     PhiEfficiencyHandler.ExportCorrections();
     //PhiEfficiencyHandler.ExportCorrectionsForCCDB();
 
-    //EfficiencyHandler K0SEfficiencyHandler(argv[2], requiredKeys);
+    //EfficiencyHandler K0SEfficiencyHandler("K0S", argv[2], requiredKeys1);
     //K0SEfficiencyHandler.ExportCorrections();
     //K0SEfficiencyHandler.ExportCorrectionsForCCDB();
 
-    //EfficiencyHandler PiEfficiencyHandler(argv[3], requiredKeys);
+    std::vector<std::string> requiredKeys2 = {"inputFile", "recoPath1", "recoPath2", "genPath", "genAssocRecoPath", "outputFile"};
+
+    //EfficiencyHandler PiEfficiencyHandler("Pi", argv[3], requiredKeys2);
     //PiEfficiencyHandler.ExportCorrections();
     //PiEfficiencyHandler.ExportCorrectionsForCCDB();
 
