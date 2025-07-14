@@ -30,13 +30,13 @@
 
 #include "AnalysisUtils/Parameters.h"
 #include "AnalysisUtils/AxesUtils.h"
+#include "AnalysisUtils/ParticleTypes.h"
+
 
 //template <typename H, typename = std::enable_if_t<std::is_base_of_v<TH1, H>>>
 class LFInvMassFitter : public TNamed 
 {
 public:
-    enum AssocParticleType { K0S, Pi, Unknown };
-
     LFInvMassFitter() = default;
     LFInvMassFitter(const std::string& assoc, const std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay>& Histo2D, 
                     /*const std::array<std::vector<TH2*>, nbin_deltay>& HistoMultInt2D,*/
@@ -62,7 +62,7 @@ public:
 
 private:
 
-    AssocParticleType mAssocParticleType{K0S}; // Default association particle type
+    ParticleType mParticleType = ParticleType::Unknown; // Default association particle type
 
     std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay> mSetHisto2D{};
     std::unordered_map<std::vector<int>, TH2*, VectorHash> mSetHisto{}; // Using unordered_map for faster access
@@ -71,9 +71,6 @@ private:
 
     int mNEvents{0}; // Number of processed events
     int mMode{0}; // 0: Data, 1: Closure test
-
-    AssocParticleType StringToAssoc(const std::string& assoc);
-    std::string AssocToSymbol(AssocParticleType assoc);
 
     void HistogramAcquisition(const char* filename, int nbin_pT, const std::string& histoname);
     void HistogramAcquisition(const std::map<std::string, std::string>& meta, const std::vector<AxisCut>& slicing);

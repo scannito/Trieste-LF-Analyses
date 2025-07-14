@@ -52,11 +52,11 @@ ClassImp(LFInvMassFitter);
 LFInvMassFitter::LFInvMassFitter(const std::string& assoc, const std::array<std::array<std::vector<TH2*>, nbin_mult>, nbin_deltay>& Histo2D, 
                                  /*const std::array<std::vector<TH2*>, nbin_deltay>& HistoMultInt2D,*/
                                  const std::string& OutPath, const std::string& OutFileName, int mode) : 
-                                 TNamed(), mAssocParticleType(StringToAssoc(assoc)), mSetHisto2D(Histo2D), /*mSetHistoMultInt2D(HistoMultInt2D),*/ 
+                                 TNamed(), mParticleType(StringToPart(assoc)), mSetHisto2D(Histo2D), /*mSetHistoMultInt2D(HistoMultInt2D),*/ 
                                  /*mOutPath(OutPath), mOutFileName(OutFileName),*/ mMode(mode)
 {
-    std::cout << "LFInvMassFitter initialized for associated particle = " << mAssocParticleType << std::endl;
-    if (mAssocParticleType == Unknown) {
+    std::cout << "LFInvMassFitter initialized for associated particle = " << PartToString(mParticleType) << std::endl;
+    if (mParticleType == ParticleType::Unknown) {
         std::cerr << "Error: Unknown associated particle type. Please check the input." << std::endl;
         return;
     }
@@ -64,13 +64,13 @@ LFInvMassFitter::LFInvMassFitter(const std::string& assoc, const std::array<std:
 
 LFInvMassFitter::LFInvMassFitter(const std::string& assoc, const char* filename, const std::vector<std::string>& requiredKeys,
                                  const std::vector<AxisCut>& slicing, int nbin_pT, const std::string& histoname) : 
-                                 TNamed(), mAssocParticleType(StringToAssoc(assoc))
+                                 TNamed(), mParticleType(StringToPart(assoc))
 {
     JSONReader jsonReader(filename, requiredKeys);
     //HistogramAcquisition(filename, nbin_pT, histoname);
     HistogramAcquisition(jsonReader.GetMeta(), slicing);
-    std::cout << "LFInvMassFitter initialized for associated particle = " << mAssocParticleType << std::endl;
-    if (mAssocParticleType == Unknown) {
+    std::cout << "LFInvMassFitter initialized for associated particle = " << PartToString(mParticleType) << std::endl;
+    if (mParticleType == ParticleType::Unknown) {
         std::cerr << "Error: Unknown associated particle type. Please check the input." << std::endl;
         return;
     }
@@ -92,28 +92,6 @@ LFInvMassFitter::~LFInvMassFitter()
                 delete histo;
         }
     }*/
-}
-
-LFInvMassFitter::AssocParticleType LFInvMassFitter::StringToAssoc(const std::string& assoc) 
-{
-    std::map<std::string, AssocParticleType> map = {
-        {"K0S", K0S},
-        {"Pi", Pi}
-    };
-
-    std::string key(assoc);
-
-    auto it = map.find(key);
-    return it != map.end() ? it->second : AssocParticleType::Unknown;
-}
-
-std::string LFInvMassFitter::AssocToSymbol(AssocParticleType assoc) 
-{
-    switch (assoc) {
-        case K0S: return "K^{0}_{S}";
-        case Pi: return "#pi";
-        default: return "Unknown";
-    }
 }
 
 void LFInvMassFitter::HistogramAcquisition(const char* filename, int nbin_pT, const std::string& histoname)
@@ -642,10 +620,10 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiPi(TH2* h2PhiPiInvMass, std
 std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiAssoc(TH2* h2PhiAssocInvMass, std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, TFile* file/*,
                                                            const std::vector<Double_t>& params, const std::vector<Double_t>& lowLimits, const std::vector<Double_t>& upLimits*/)
 {
-    switch (mAssocParticleType) {
-        case K0S: // K0S
+    switch (mParticleType) {
+        case ParticleType::PhiK0S:
             return FitPhiK0S(h2PhiAssocInvMass, indices, file/*, params, lowLimits, upLimits*/);
-        case Pi: // Pi
+        case ParticleType::PhiPi:
             return FitPhiPi(h2PhiAssocInvMass, indices, isTPCOrTOF, isDataOrMcReco, file/*, params, lowLimits, upLimits*/);
         default:
             throw std::invalid_argument("Invalid association type specified.");
@@ -664,7 +642,7 @@ void LFInvMassFitter::ExportYields(const char* filename, Int_t nbin_pT, const st
         for (int j = 0; j < nbin_mult; j++) {
             std::string hName = hSetName + "_" + std::to_string(i) + "_" + std::to_string(j);
             TH1* h1PhiAssocYield = new TH1D(hName.c_str(), hName.c_str(), nbin_pT, pT_axis.data());       
-            h1PhiAssocYield->SetTitle(Form("; #it{p}_{T} (GeV/#it{c}); 1/N_{ev,#phi} d^{2}N_{%s}/d#it{y}d#it{p}_{T} [(GeV/#it{c})^{-1}]", AssocToSymbol(mAssocParticleType).c_str()));
+            h1PhiAssocYield->SetTitle(Form("; #it{p}_{T} (GeV/#it{c}); 1/N_{ev,#phi} d^{2}N_{%s}/d#it{y}d#it{p}_{T} [(GeV/#it{c})^{-1}]", PartToSymbol(mParticleType).c_str()));
 
             for (int k = 0; k < nbin_pT; k++) {
                 std::cout << "Processing bin: " << i << ", " << j << ", " << k << std::endl;
@@ -823,7 +801,7 @@ void LFInvMassFitter::FillWorkspace(RooWorkspace& workspace, std::pair<Double_t,
         if (indices[0] == 2 && indices[1] == 9 && (indices[2] == 4 || indices[2] == 5)) dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "moddsCrystalBallMultGaussTOFel", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
     }
     workspace.import(*dsCrystalBallMultGaussTOF);
-    
+
     /*else if (isDataOrMcReco == 1) {
         if (isTPCOrTOF == 0) {
             if (indices.size() == 2) {
