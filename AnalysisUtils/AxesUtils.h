@@ -31,3 +31,13 @@ inline std::vector<std::vector<AxisCut>> ExpandAxisCuts(const std::vector<AxisCu
     recurse(recurse, 0, {});
     return result;
 }
+
+struct VectorHash {
+    std::size_t operator()(const std::vector<int>& vec) const {
+        std::size_t seed = vec.size();
+        for (auto& i : vec) {
+            seed ^= std::hash<int>{}(i) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+};

@@ -22,6 +22,8 @@
 
 #include "AnalysisUtils/Parameters.h"
 #include "AnalysisUtils/Plot.h"
+#include "AnalysisUtils/FitFunctions.h"
+#include "AnalysisUtils/AxesUtils.h"
 
 // Main logics declaration
 int runTHnSparseProjector(int argc, char* argv[]);
@@ -68,18 +70,28 @@ int runTHnSparseProjector(int argc, char* argv[])
     std::vector<std::string> requiredKeys = {"inputFile", "objectPath", "outputFile"};
 
     THnSparseProjector THnSparseProjectorPhiK0S(argv[1], requiredKeys);
-    THnSparseProjectorPhiK0S.ExportProjections(nbin_pT::K0S, "h2PhiK0SInvMass", {4, 3});
+    std::vector<AxisCut> slicingK0S = {  };
+    THnSparseProjectorPhiK0S.ExportProjections(nbin_pT::K0S, slicingK0S, "h2PhiK0SInvMass", {4, 3});
 
     THnSparseProjector THnSparseProjectorPhiPi(argv[2], requiredKeys);
-    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC", {5, 3});
-    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF", {5, 4});
+    std::vector<AxisCut> slicingPi = {  };
+    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, slicingPi, "h2PhiInvMassPiNSigmaTPC", {5, 3});
+    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, slicingPi, "h2PhiInvMassPiNSigmaTOF", {5, 4});
 
     return 0;
 }
 
 int runLFInvMassFitter(int argc, char* argv[])
 {
-    LFInvMassFitter PhiK0SFitter("K0S", "../../AnalysisSte/data/PhiK0SAnalysisProjections.root", nbin_pT::K0S, "h2PhiK0SInvMass");
+    if (argc < 2) {
+        std::cerr << "Usage: fitter <inputFile.json>\n";
+        return 1;
+    }
+
+    std::vector<std::string> requiredKeys = {"inputFile", "objectsPath", "outputFile"};
+
+    std::vector<AxisCut> slicingK0S = {  };
+    LFInvMassFitter PhiK0SFitter("K0S", "../../AnalysisSte/data/PhiK0SAnalysisProjections.root", requiredKeys, slicingK0S, nbin_pT::K0S, "h2PhiK0SInvMass");
     PhiK0SFitter.ExportYields("../../AnalysisSte/data/PhiK0SYields.root", nbin_pT::K0S, pT_axis::K0S, "h1PhiK0SYield", 0);
 
     //LFInvMassFitter PhiPiTPCFitter("Pi", "../../AnalysisSte/data/PhiPiTPCAnalysisProjections.root", nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC");

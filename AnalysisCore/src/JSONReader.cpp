@@ -16,7 +16,7 @@ JSONReader::JSONReader(const char* filename, const std::vector<std::string>& req
 
     // Parse JSON
     rapidjson::Document document;
-    document.Parse(jsonStr.data());
+    document.Parse(jsonStr.c_str());
 
     if (document.HasParseError()) {
         std::cerr << "Error parsing JSON" << std::endl;

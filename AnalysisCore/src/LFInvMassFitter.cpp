@@ -19,10 +19,30 @@
 #include <vector>
 #include <string>
 
+#include "RooRealVar.h"
+#include "RooDataHist.h"
+#include "RooHistPdf.h"
+#include "RooPlot.h"
+#include "RooFitResult.h"
+#include "RooProduct.h"
+#include "RooGaussian.h"
+#include "RooPolynomial.h"
+#include "RooAddPdf.h"
+#include "RooDataSet.h"
+#include "RooArgList.h"
+#include "RooProdPdf.h"
+#include "RooCBShape.h"
+#include "RooCrystalBall.h"
+#include "RooVoigtian.h"
+#include "RooGenericPdf.h"
+#include "RooWorkspace.h"
+#include "RooAbsPdf.h"
+
 #include "AnalysisUtils/Parameters.h"
 #include "AnalysisUtils/FitFunctions.h"
 #include "AnalysisUtils/Plot.h"
 
+#include "JSONReader.h"
 #include "LFInvMassFitter.h"
 
 using namespace RooFit;
@@ -42,11 +62,14 @@ LFInvMassFitter::LFInvMassFitter(const std::string& assoc, const std::array<std:
     }
 }
 
-LFInvMassFitter::LFInvMassFitter(const std::string& assoc, const char* filename, int nbin_pT, const std::string& histoname) : 
+LFInvMassFitter::LFInvMassFitter(const std::string& assoc, const char* filename, const std::vector<std::string>& requiredKeys,
+                                 const std::vector<AxisCut>& slicing, int nbin_pT, const std::string& histoname) : 
                                  TNamed(), mAssocParticleType(StringToAssoc(assoc))
 {
+    JSONReader jsonReader(filename, requiredKeys);
+    //HistogramAcquisition(filename, nbin_pT, histoname);
+    HistogramAcquisition(jsonReader.GetMeta(), slicing);
     std::cout << "LFInvMassFitter initialized for associated particle = " << mAssocParticleType << std::endl;
-    HistogramAcquisition(filename, nbin_pT, histoname);
     if (mAssocParticleType == Unknown) {
         std::cerr << "Error: Unknown associated particle type. Please check the input." << std::endl;
         return;
@@ -95,8 +118,8 @@ std::string LFInvMassFitter::AssocToSymbol(AssocParticleType assoc)
 
 void LFInvMassFitter::HistogramAcquisition(const char* filename, int nbin_pT, const std::string& histoname)
 {
-    TFile* file = TFile::Open(filename);
-    if (!file || !file->IsOpen()) {
+    std::unique_ptr<TFile> inputFile = std::unique_ptr<TFile>(TFile::Open(filename));
+    if (!inputFile || !inputFile->IsOpen()) {
         std::cerr << "Error: Could not open file " << filename << std::endl;
         return;
     }
@@ -107,14 +130,43 @@ void LFInvMassFitter::HistogramAcquisition(const char* filename, int nbin_pT, co
         for (int j = 0; j < nbin_mult; ++j) {
             for (int k = 0; k < nbin_pT; ++k) {
                 std::string hName = histoname + "_" + std::to_string(i) + "_" + std::to_string(j) + "_" + std::to_string(k);
-                TH2* htemp = (TH2*)file->Get(hName.data());
+                TH2* htemp = (TH2*)inputFile->Get(hName.c_str());
                 htemp->SetDirectory(0);
                 mSetHisto2D[i-1][j].push_back(htemp);
             }
         }
     }
+}
 
-    file->Close();
+void LFInvMassFitter::HistogramAcquisition(const std::map<std::string, std::string>& meta, const std::vector<AxisCut>& slicing)
+{
+    std::unique_ptr<TFile> inputFile = std::unique_ptr<TFile>(TFile::Open(meta.at("inputFile").c_str()));
+    if (!inputFile || inputFile->IsZombie()) {
+        std::cerr << "Error opening input file: " << meta.at("inputFile") << std::endl;
+        return;
+    }
+
+    auto cutSets = ExpandAxisCuts(slicing);
+
+    for (const auto& combo : cutSets) {
+        std::vector<int> key;
+        std::string hName = meta.at("objectsPath");
+        for (const auto& cut : combo) {
+            key.push_back(cut.binLow);
+            hName += "_" + std::to_string(cut.binLow);
+        }
+
+        TH2* hTemp = (TH2*)inputFile->Get(hName.c_str());
+        if (!hTemp) {
+            std::cerr << "Error retrieving histogram: " << hName << std::endl;
+            continue;
+        }
+        TH2* hClone = (TH2*)hTemp->Clone(hName.c_str());
+        hClone->SetDirectory(0);
+        mSetHisto[key] = hClone;
+    }
+
+    mOutputFileName = meta.at("outputFile");
 }
 
 std::pair<Double_t, Double_t> LFInvMassFitter::GetPhiPurityAndError(TH1* h1PhiInvMass, std::string nameCanvas, Int_t isDataOrReco, 
@@ -611,8 +663,8 @@ void LFInvMassFitter::ExportYields(const char* filename, Int_t nbin_pT, const st
     for (int i = 0; i < nbin_deltay; i++) {
         for (int j = 0; j < nbin_mult; j++) {
             std::string hName = hSetName + "_" + std::to_string(i) + "_" + std::to_string(j);
-            TH1* h1PhiAssocYield = new TH1D(hName.data(), hName.data(), nbin_pT, pT_axis.data());       
-            h1PhiAssocYield->SetTitle(Form("; #it{p}_{T} (GeV/#it{c}); 1/N_{ev,#phi} d^{2}N_{%s}/d#it{y}d#it{p}_{T} [(GeV/#it{c})^{-1}]", AssocToSymbol(mAssocParticleType).data()));
+            TH1* h1PhiAssocYield = new TH1D(hName.c_str(), hName.c_str(), nbin_pT, pT_axis.data());       
+            h1PhiAssocYield->SetTitle(Form("; #it{p}_{T} (GeV/#it{c}); 1/N_{ev,#phi} d^{2}N_{%s}/d#it{y}d#it{p}_{T} [(GeV/#it{c})^{-1}]", AssocToSymbol(mAssocParticleType).c_str()));
 
             for (int k = 0; k < nbin_pT; k++) {
                 std::cout << "Processing bin: " << i << ", " << j << ", " << k << std::endl;
@@ -635,7 +687,7 @@ void LFInvMassFitter::ExportYields(const char* filename, Int_t nbin_pT, const st
     outputFile->Close();
 }
 
-void LFInvMassFitter::CheckValidMembers()
+/*void LFInvMassFitter::CheckValidMembers()
 {
     int id = 0;
     for (auto& histo2DArray : mSetHisto2D) {
@@ -649,4 +701,157 @@ void LFInvMassFitter::CheckValidMembers()
             }
         }
     }
+}*/
+
+void LFInvMassFitter::FillWorkspace(RooWorkspace& workspace, std::pair<Double_t, Double_t> limits1, std::pair<Double_t, Double_t> limits2, 
+                                    std::pair<Double_t, Double_t> limits3, std::vector<Int_t> indices) const // To be changed with member limits 
+{
+    RooRealVar mass1("mass1", "mass1", limits1.first, limits1.second);
+    workspace.import(mass1);
+    RooRealVar mass2("mass2", "mass2", limits2.first, limits2.second);
+    workspace.import(mass2);
+    RooRealVar nSigma("nSigma", "nSigma", limits3.first, limits3.second);
+    workspace.import(nSigma);
+
+    RooRealVar alpha1CB_1("alpha1CB_1", "alpha1CB_1", 1., 1., 2.);
+    RooRealVar alpha2CB_1("alpha2CB_1", "alpha2CB_1", 1., 1., 2.);
+    RooRealVar n1CB_1("n1CB_1", "n1CB_1", 5., 1., 10.);
+    RooRealVar n2CB_1("n2CB_1", "n2CB_1", 5., 1., 10.);
+    RooRealVar meanCB_1("meanCB_1", "meanCBv", 0.49, 0.48, 0.5);
+    RooRealVar sigmaCB_1("sigmaCB_1", "sigmaCB_1", 0.003, 0.001, 0.1);
+    RooCrystalBall dsCrystalBall_1("dsCrystalBall_1", "dsCrystalBall_1", mass1, meanCB_1, sigmaCB_1, alpha1CB_1, n1CB_1, alpha2CB_1, n2CB_1);
+
+    RooRealVar a1("a1", "a1", -1., -1.7, 10.);
+    RooPolynomial bkgDSCB("bkgDSCB", "bkgDSCB", mass1, RooArgList(a1));
+
+    RooRealVar meanV("meanV", "meanV", 1.02, 0.987, 1.2);
+    RooRealVar width("width", "width", 0.00426);
+    width.setConstant(true);
+    RooRealVar sigmaV("sigmaV", "sigmaV", 0.001, 0.0001, 0.01);
+    RooVoigtian voigt("voigt", "Voigtian", mass2, meanV, width, sigmaV);
+
+    RooRealVar b0("b0", "b0", 5, 0, 10);
+    RooRealVar b1("b1", "b1", 7, 0, 50);
+    RooRealVar b2("b2", "b2", 2, 0, 50);
+    RooGenericPdf bkgVoigt("bkgVoigt", "bkgVoigt", "b0 + b1*y + b2*sqrt(y-0.987)", RooArgList(mass2, b0, b1, b2));
+    
+    RooProdPdf sigsig_1("sigsig_1", "sigsig_1", RooArgList(dsCrystalBall_1, voigt));
+    RooProdPdf sigbkg_1("sigbkg_1", "sigbkg_1", RooArgList(dsCrystalBall_1, bkgVoigt));
+    RooProdPdf bkgsig("bkgsig", "bkgsig", RooArgList(bkgDSCB, voigt));
+    RooProdPdf bkgbkg("bkgbkg", "bkgbkg", RooArgList(bkgDSCB, bkgVoigt));
+
+    RooRealVar nsigsig_1("nsigsig_1", "nsigsig_1", 1000, 0, 1000000);
+    RooRealVar nsigbkg_1("nsigbkg_1", "nsigbkg_1", 50000, 0, 2000000);
+    RooRealVar nbkgsig("nbkgsig", "nbkgsig", 5000, 0, 250000);
+    RooRealVar nbkgbkg("nbkgbkg", "nbkgbkg", 10000, 0, 500000);
+
+    // Modello per Phi-K0S
+    RooAddPdf dsCrystalBallVoigt("dsCrystalBallVoigt", "dsCrystalBallVoigt", RooArgList(sigsig_1, sigbkg_1, bkgsig, bkgbkg), RooArgList(nsigsig_1, nsigbkg_1, nbkgsig, nbkgbkg));
+    workspace.import(dsCrystalBallVoigt);
+
+    RooRealVar alpha1CB_2("alpha1CB_2", "alpha1CB_2", 1., 1., 5.);
+    RooRealVar alpha2CB_2("alpha2CB_2", "alpha2CB_2", 1., 1., 5.);
+    RooRealVar n1CB_2("n1CB_2", "n1CB_2", 10., 1., 10.);
+    RooRealVar n2CB_2("n2CB_2", "n2CB_2", 10., 1., 10.);
+    RooRealVar meanCB_2("meanCB_2", "meanCB_2", 0., -1., 1.5);
+    RooRealVar sigmaCB_2("sigmaCB_2", "sigmaCB_2", 1., 0.001, 2.5);
+    RooCrystalBall dsCrystalBall_2("dsCrystalBall_2", "dsCrystalBall_2", nSigma, meanCB_2, sigmaCB_2, alpha1CB_2, n1CB_2, alpha2CB_2, n2CB_2);
+
+    RooRealVar meanG1("meanG1", "meanG1", -7., -8., -6.);
+    RooRealVar sigmaG1("sigmaG1", "sigmaG1", 0.2, 0.1, 1.);
+    RooGaussian gauss1("gauss1", "gauss1", nSigma, meanG1, sigmaG1);
+
+    RooRealVar meanG2("meanG2", "meanG2", 7., 3., 5.);
+    RooRealVar sigmaG2("sigmaG2", "sigmaG2", 1., 0.001, 5.);
+    RooGaussian gauss2("gauss2", "gauss2", nSigma, meanG2, sigmaG2);
+
+    RooRealVar meanG3("meanG3", "meanG3", 2., 0., 7.);
+    RooRealVar sigmaG3("sigmaG3", "sigmaG3", 1., 0.001, 5.);
+    RooGaussian gauss3("gauss3", "gauss3", nSigma, meanG3, sigmaG3);
+
+    RooRealVar meanG4("meanG4", "meanG4", 4., 2., 6.);
+    RooRealVar sigmaG4("sigmaG4", "sigmaG4", 0.2, 0.1, 2.);
+    RooGaussian gauss4("gauss4", "gauss4", nSigma, meanG4, sigmaG4);
+
+    RooProdPdf sigsig_2("sigsig_2", "sigsig_2", RooArgList(dsCrystalBall_2, voigt));
+    RooProdPdf sigbkg_2("sigbkg_2", "sigbkg_2", RooArgList(dsCrystalBall_2, bkgVoigt));
+    RooProdPdf missig1sig("missig1sig", "missig1sig", RooArgList(gauss1, voigt));
+    RooProdPdf missig1bkg("missig1bkg", "missig1bkg", RooArgList(gauss1, bkgVoigt));
+    RooProdPdf missig2sig("missig2sig", "missig2sig", RooArgList(gauss2, voigt));
+    RooProdPdf missig2bkg("missig2bkg", "missig2bkg", RooArgList(gauss2, bkgVoigt));
+    RooProdPdf missig3sig("missig3sig", "missig3sig", RooArgList(gauss3, voigt));
+    RooProdPdf missig3bkg("missig3bkg", "missig3bkg", RooArgList(gauss3, bkgVoigt));
+    RooProdPdf missig4sig("missig4sig", "missig4sig", RooArgList(gauss4, voigt));
+    RooProdPdf missig4bkg("missig4bkg", "missig4bkg", RooArgList(gauss4, bkgVoigt));
+
+    RooRealVar nsigsig_2("nsigsig_2", "nsigsigv", 100000, 0, 90000000);
+    RooRealVar nsigbkg_2("nsigbkg_2", "nsigbkg_2", 50000, 0, 50000000);
+    RooRealVar nmissig1sig("nmissig1sig", "nmissig1sig", 100000, 0, 90000000);
+    RooRealVar nmissig1bkg("nmissig1bkg", "nmissig1bkg", 50000, 0, 50000000);
+    RooRealVar nmissig2sig("nmissig2sig", "nmissig2sig", 10000, 0, 900000);
+    RooRealVar nmissig2bkg("nmissig2bkg", "nmissig2bkg", 5000, 0, 500000);
+    RooRealVar nmissig3sig("nmissig3sig", "nmissig3sig", 10000, 0, 900000);
+    RooRealVar nmissig3bkg("nmissig3bkg", "nmissig3bkg", 5000, 0, 500000);
+    RooRealVar nmissig4sig("nmissig4sig", "nmissig4sig", 10000, 0, 900000);
+    RooRealVar nmissig4bkg("nmissig4bkg", "nmissig4bkg", 5000, 0, 500000);
+
+    // Modello per Phi-Pi con TPC
+    RooAddPdf* dsCrystalBallMultGaussTPC;
+    if (indices.size() == 2) {
+        if (indices[1] < 6) dsCrystalBallMultGaussTPC = new RooAddPdf("dsCrystalBallMultGaussTPC", "dsCrystalBallMultGaussTPC", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
+        else dsCrystalBallMultGaussTPC = new RooAddPdf("dsCrystalBallMultGaussTPC", "dsCrystalBallMultGaussTPC", RooArgList(sigsig_2, missig3sig, sigbkg_2, missig3bkg), RooArgList(nsigsig_2, nmissig3sig, nsigbkg_2, nmissig3bkg));
+    } else if (indices.size() == 3) {
+        if (indices[2] < 6) dsCrystalBallMultGaussTPC = new RooAddPdf("dsCrystalBallMultGaussTPC", "dsCrystalBallMultGaussTPC", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
+        else dsCrystalBallMultGaussTPC = new RooAddPdf("dsCrystalBallMultGaussTPC", "dsCrystalBallMultGaussTPC", RooArgList(sigsig_2, missig3sig, sigbkg_2, missig3bkg), RooArgList(nsigsig_2, nmissig3sig, nsigbkg_2, nmissig3bkg));
+    }
+    workspace.import(*dsCrystalBallMultGaussTPC);
+
+    // Modello per Phi-Pi con TOF
+    RooAddPdf* dsCrystalBallMultGaussTOF;
+    if (indices.size() == 2){
+        if (indices[1] < 6) {
+            if (indices[1] == 1) dsCrystalBallMultGaussTOF = new RooAddPdf("mdsCrystalBallMultGaussTOFdel", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, missig1sig, sigbkg_2, missig1bkg), RooArgList(nsigsig_2, nmissig1sig, nsigbkg_2, nmissig1bkg));
+            else dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, sigbkg_2), RooArgList(nsigsig_2, nsigbkg_2));
+        }
+        else dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
+    } else if (indices.size() == 3) {
+        if (indices[2] < 6) {
+            if (indices[2] == 1) dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, missig1sig, sigbkg_2, missig1bkg), RooArgList(nsigsig_2, nmissig1sig, nsigbkg_2, nmissig1bkg));
+            else dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, sigbkg_2), RooArgList(nsigsig_2, nsigbkg_2));
+        }
+        else dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
+        if (indices[0] == 2 && indices[1] == 9 && (indices[2] == 4 || indices[2] == 5)) dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "moddsCrystalBallMultGaussTOFel", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
+    }
+    workspace.import(*dsCrystalBallMultGaussTOF);
+    
+    /*else if (isDataOrMcReco == 1) {
+        if (isTPCOrTOF == 0) {
+            if (indices.size() == 2) {
+                if (indices[1] < 6) model = new RooAddPdf("model", "model", RooArgList(sigsig, missig2sig, sigbkg, missig2bkg), RooArgList(nsigsig, nmissig2sig, nsigbkg, nmissig2bkg));
+                else model = new RooAddPdf("model", "model", RooArgList(sigsig, missig3sig, sigbkg, missig3bkg), RooArgList(nsigsig, nmissig3sig, nsigbkg, nmissig3bkg));
+            } else if (indices.size() == 3) {
+                if (indices[2] < 6) model = new RooAddPdf("model", "model", RooArgList(sigsig, missig2sig, sigbkg, missig2bkg), RooArgList(nsigsig, nmissig2sig, nsigbkg, nmissig2bkg));
+                else model = new RooAddPdf("model", "model", RooArgList(sigsig, missig3sig, sigbkg, missig3bkg), RooArgList(nsigsig, nmissig3sig, nsigbkg, nmissig3bkg));
+            }
+        } else if (isTPCOrTOF == 1) {
+            if (indices.size() == 2){
+                if (indices[1] < 3) {
+                    if (indices[1] == 1) model = new RooAddPdf("model", "model", RooArgList(sigsig, missig1sig, sigbkg, missig1bkg), RooArgList(nsigsig, nmissig1sig, nsigbkg, nmissig1bkg));
+                    else model = new RooAddPdf("model", "model", RooArgList(sigsig, sigbkg), RooArgList(nsigsig, nsigbkg));
+                }
+                else model = new RooAddPdf("model", "model", RooArgList(sigsig, missig2sig, sigbkg, missig2bkg), RooArgList(nsigsig, nmissig2sig, nsigbkg, nmissig2bkg));
+                if (indices[0] == 2 && indices[1] == 6) model = new RooAddPdf("model", "model", RooArgList(sigsig, missig2sig, missig4sig, sigbkg, missig2bkg, missig4bkg), RooArgList(nsigsig, nmissig2sig, nmissig4sig, nsigbkg, nmissig2bkg, nmissig4bkg));
+            } else if (indices.size() == 3) {
+                if (indices[2] < 3) {
+                    if (indices[2] == 1) model = new RooAddPdf("model", "model", RooArgList(sigsig, missig1sig, sigbkg, missig1bkg), RooArgList(nsigsig, nmissig1sig, nsigbkg, nmissig1bkg));
+                    else model = new RooAddPdf("model", "model", RooArgList(sigsig, sigbkg), RooArgList(nsigsig, nsigbkg));
+                }
+                else model = new RooAddPdf("model", "model", RooArgList(sigsig, missig2sig, sigbkg, missig2bkg), RooArgList(nsigsig, nmissig2sig, nsigbkg, nmissig2bkg));
+                if (indices[0] == 0 && (indices[1] == 8 || indices[1] == 9) && indices[2] == 6) model = new RooAddPdf("model", "model", RooArgList(sigsig, missig2sig, missig4sig, sigbkg, missig2bkg, missig4bkg), RooArgList(nsigsig, nmissig2sig, nmissig4sig, nsigbkg, nmissig2bkg, nmissig4bkg));
+                if (indices[0] == 1 && (indices[1] == 8 || indices[1] == 9) && indices[2] == 6) model = new RooAddPdf("model", "model", RooArgList(sigsig, missig2sig, missig4sig, sigbkg, missig2bkg, missig4bkg), RooArgList(nsigsig, nmissig2sig, nmissig4sig, nsigbkg, nmissig2bkg, nmissig4bkg));
+                if (indices[0] == 2 && (indices[1] == 5 || indices[1] == 6 ||
+                    indices[1] == 7 || indices[1] == 8 || indices[1] == 9) && indices[2] == 6) model = new RooAddPdf("model", "model", RooArgList(sigsig, missig2sig, missig4sig, sigbkg, missig2bkg, missig4bkg), RooArgList(nsigsig, nmissig2sig, nmissig4sig, nsigbkg, nmissig2bkg, nmissig4bkg));
+            }
+        }
+    }*/
 }

@@ -20,13 +20,13 @@ EfficiencyHandler::EfficiencyHandler(const char* filename, const std::vector<std
 
 void EfficiencyHandler::HistogramsAcquisition(const std::map<std::string, std::string>& meta)
 {
-    TFile* inputFile = TFile::Open(meta.at("inputFile").data());
+    std::unique_ptr<TFile> inputFile = std::unique_ptr<TFile>(TFile::Open(meta.at("inputFile").c_str()));
     if (!inputFile || inputFile->IsZombie()) {
         std::cerr << "Error opening input file: " << meta.at("inputFile") << std::endl;
         return;
     }
 
-    TH3* tempRecoHistogram = (TH3*)inputFile->Get(meta.at("recoPath").data());
+    TH3* tempRecoHistogram = (TH3*)inputFile->Get(meta.at("recoPath").c_str());
     if (!tempRecoHistogram) {
         std::cerr << "Error retrieving TObject: " << meta.at("recoPath") << std::endl;
         return;
@@ -36,7 +36,7 @@ void EfficiencyHandler::HistogramsAcquisition(const std::map<std::string, std::s
     mRecoHistogram.reset(cloneReco);
     std::cout << "Directory of cloned reco histogram: " << mRecoHistogram->GetDirectory() << std::endl;
 
-    TH3* tempGenHistogram = (TH3*)inputFile->Get(meta.at("genPath").data());
+    TH3* tempGenHistogram = (TH3*)inputFile->Get(meta.at("genPath").c_str());
     if (!tempGenHistogram) {
         std::cerr << "Error retrieving TObject: " << meta.at("genPath") << std::endl;
         return;
@@ -46,7 +46,7 @@ void EfficiencyHandler::HistogramsAcquisition(const std::map<std::string, std::s
     mGenHistogram.reset(cloneGen);
     std::cout << "Directory of cloned gen histogram: " << mGenHistogram->GetDirectory() << std::endl;
 
-    TH3* tempGenAssocRecoHistogram = (TH3*)inputFile->Get(meta.at("genAssocRecoPath").data());
+    TH3* tempGenAssocRecoHistogram = (TH3*)inputFile->Get(meta.at("genAssocRecoPath").c_str());
     if (!tempGenAssocRecoHistogram) {
         std::cerr << "Error retrieving TObject: " << meta.at("genAssocRecoPath") << std::endl;
         return;
@@ -57,14 +57,11 @@ void EfficiencyHandler::HistogramsAcquisition(const std::map<std::string, std::s
     std::cout << "Directory of cloned gen assoc reco histogram: " << mGenAssocRecoHistogram->GetDirectory() << std::endl;
 
     mOutputFileName = meta.at("outputFile");
-
-    inputFile->Close();
-    delete inputFile;
 }
 
 void EfficiencyHandler::ExportCorrections()
 {
-    TFile* outputFile = TFile::Open(mOutputFileName.data(), "RECREATE");
+    TFile* outputFile = TFile::Open(mOutputFileName.c_str(), "RECREATE");
     if (!outputFile || outputFile->IsZombie()) {
         std::cerr << "Error opening output file: " << mOutputFileName << std::endl;
         return;
@@ -94,9 +91,9 @@ void EfficiencyHandler::ExportCorrections()
 
 void EfficiencyHandler::ExportCorrectionsForCCDB()
 {
-    TFile* outputFile = TFile::Open(mOutputFileName.data(), "UPDATE");
+    TFile* outputFile = TFile::Open(mOutputFileName.c_str(), "UPDATE");
     if (!outputFile || outputFile->IsZombie()) {
-        outputFile = TFile::Open(mOutputFileName.data(), "RECREATE");
+        outputFile = TFile::Open(mOutputFileName.c_str(), "RECREATE");
     }
 
     TList* outputList = (TList*)outputFile->Get("ccdb_object");
