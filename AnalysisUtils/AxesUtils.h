@@ -2,7 +2,8 @@
 
 #include <vector>
 
-struct AxisCut {
+struct AxisCut 
+{
     int axis;
     int binLow;
     int binHigh;

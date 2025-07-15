@@ -88,15 +88,13 @@ LFInvMassFitter::~LFInvMassFitter()
             }
         }
     }
-    /*for (auto& histoMultInt : mSetHistoMultInt2D) {
-        for (auto& histo : histoMultInt) {
-            if (histo) 
-                delete histo;
-        }
-    }*/
+
+    if (mWorkspace) {
+        delete mWorkspace; // Clean up the RooWorkspace if it was created
+    }
 }
 
-void LFInvMassFitter::HistogramAcquisition(const char* filename, int nbin_pT, const std::string& histoname)
+/*void LFInvMassFitter::HistogramAcquisition(const char* filename, int nbin_pT, const std::string& histoname)
 {
     std::unique_ptr<TFile> inputFile = std::unique_ptr<TFile>(TFile::Open(filename));
     if (!inputFile || !inputFile->IsOpen()) {
@@ -116,7 +114,7 @@ void LFInvMassFitter::HistogramAcquisition(const char* filename, int nbin_pT, co
             }
         }
     }
-}
+}*/
 
 void LFInvMassFitter::HistogramAcquisition(const std::map<std::string, std::string>& meta, const std::vector<AxisCut>& slicing)
 {
@@ -632,7 +630,330 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiAssoc(TH2* h2PhiAssocInvMas
     }
 }
 
+std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiK0S2(std::vector<Int_t> indices, Double_t nSigma, TFile* file)
+{
+    mWorkspace = new RooWorkspace("mWorkspace");
+    FillWorkspace(indices);
+
+    RooRealVar* mass1 = mWorkspace->var("mass1");
+    RooRealVar* mass2 = mWorkspace->var("mass2");
+
+    RooDataHist dataHistogram("dataHistogram", "dataHistogram", RooArgList(*mass1, *mass2), mSetHisto[indices]);
+    RooAbsPdf* model = mWorkspace->pdf("dsCrystalBallVoigt");
+
+    RooFitResult* result = model->fitTo(dataHistogram, Optimize(1), Extended(1), Save(1));
+
+    RooArgSet observables(*mass1, *mass2);
+    RooArgSet* params = model->getParameters(observables);
+    for (RooAbsArg* param : *params) {
+        if (auto* var = dynamic_cast<RooRealVar*>(param)) {
+            var->Print();
+        }
+    }
+
+    RooRealVar* meanCB = mWorkspace->var("meanCB_1");
+    RooRealVar* sigmaCB = mWorkspace->var("sigmaCB_1");
+
+    Int_t lowedgeK0S = mSetHisto[indices]->GetXaxis()->FindFixBin(meanCB->getVal() - nSigma * sigmaCB->getVal());
+    Int_t upedgeK0S = mSetHisto[indices]->GetXaxis()->FindFixBin(meanCB->getVal() + nSigma * sigmaCB->getVal());
+
+    Double_t lowfitK0S = mSetHisto[indices]->GetXaxis()->GetBinLowEdge(lowedgeK0S);
+    Double_t upfitK0S = mSetHisto[indices]->GetXaxis()->GetBinLowEdge(upedgeK0S +1);
+
+    RooRealVar* meanV = mWorkspace->var("meanV");
+    RooRealVar* width = mWorkspace->var("width");
+
+    Int_t lowedgePhi = mSetHisto[indices]->GetYaxis()->FindFixBin(meanV->getVal() - 2. * width->getVal());
+    Int_t upedgePhi = mSetHisto[indices]->GetYaxis()->FindFixBin(meanV->getVal() + 2. * width->getVal());
+
+    Double_t lowfitPhi = mSetHisto[indices]->GetYaxis()->GetBinLowEdge(lowedgePhi);
+    Double_t upfitPhi = mSetHisto[indices]->GetYaxis()->GetBinLowEdge(upedgePhi +1);
+
+    TCanvas* cPhiK0SInvMass;
+    if (indices.size() == 2) cPhiK0SInvMass = new TCanvas(Form("cPhiK0SInvMass_%d_%d", indices[0], indices[1]), Form("cPhiK0SInvMass_%d_%d", indices[0], indices[1]), 800, 800);
+    else if (indices.size() == 3) cPhiK0SInvMass = new TCanvas(Form("cPhiK0SInvMass_%d_%d_%d", indices[0], indices[1], indices[2]), Form("cPhiK0SInvMass_%d_%d_%d", indices[0], indices[1], indices[2]), 800, 800);
+    cPhiK0SInvMass->cd();
+    gPad->SetMargin(0.16,0.03,0.13,0.06);
+    gStyle->SetOptStat(0);
+
+    /*RooPlot* frame = x.frame();
+    if (indices.size() == 2) {
+        frame->SetName(Form("frame_%d_%d", indices[0], indices[1]));
+        frame->SetTitle(Form("Mult int, %f - %f (GeV/#it{c}); #it{M}(#pi^{+} + #pi^{#minus}) (GeV/#it{c}^{2}); Counts", pTK0S_axis[indices[1]], pTK0S_axis[indices[1]+1]));
+    }
+    else if (indices.size() == 3) {
+        frame->SetName(Form("frame_%d_%d_%d", indices[0], indices[1], indices[2]));
+        frame->SetTitle(Form("%f - %f %%, %f - %f (GeV/#it{c}); #it{M}(#pi^{+} + #pi^{#minus}) (GeV/#it{c}^{2}); Counts", mult_axis[indices[1]], mult_axis[indices[1]+1], pTK0S_axis[indices[2]], pTK0S_axis[indices[2]+1]));
+    }
+    data.plotOn(frame);
+    model.plotOn(frame);
+    //model.plotOn(frame, Components(sigsig), LineColor(kRed), LineStyle(kSolid), Normalization(1.0, RooAbsReal::RelativeExpected));
+    //model.plotOn(frame, Components(sigbkg), LineColor(kGreen), LineStyle(kSolid), Normalization(1.0, RooAbsReal::RelativeExpected));
+    //model.plotOn(frame, Components(bkgsig), LineColor(kBlue), LineStyle(kSolid), Normalization(1.0, RooAbsReal::RelativeExpected));
+    //model.plotOn(frame, Components(bkgbkg), LineColor(kMagenta), LineStyle(kSolid), Normalization(1.0, RooAbsReal::RelativeExpected));
+    frame->Draw();*/
+
+    mSetHisto[indices]->Draw("LEGO2");
+    mSetHisto[indices]->SetTitle("; #it{M}(#pi^{+}#pi^{#minus}) (GeV/#it{c}^{2}); #it{M}(K^{+}K^{#minus}) (GeV/#it{c}^{2}); Counts");
+    mSetHisto[indices]->GetXaxis()->SetTitleOffset(1.7);
+    mSetHisto[indices]->GetXaxis()->SetLabelSize(0.03);
+    mSetHisto[indices]->GetYaxis()->SetTitleOffset(2.3);
+    mSetHisto[indices]->GetYaxis()->SetLabelSize(0.03);
+    mSetHisto[indices]->GetZaxis()->SetTitleOffset(1.7);
+    mSetHisto[indices]->GetZaxis()->SetLabelSize(0.03);
+
+    TH2F* hist2D_fit = (TH2F*)model->createHistogram("hist2D_fit", *mass1, Binning(mSetHisto[indices]->GetNbinsX()), YVar(*mass2, Binning(mSetHisto[indices]->GetNbinsY())));
+    hist2D_fit->SetLineColor(kRed);
+    hist2D_fit->GetZaxis()->SetTitleOffset(1.5);
+    hist2D_fit->Draw("SURF SAME");
+
+    std::cout << "Creating projections for K0S invariant mass..." << std::endl;
+
+    /*TCanvas* cPhiK0SInvMassProjection;
+    cPhiK0SInvMassProjection->Divide(2,1);
+    if (indices.size() == 2) cPhiK0SInvMassProjection = new TCanvas(Form("cPhiK0SInvMassProjection_%d_%d", indices[0], indices[1]), Form("cPhiK0SInvMassProjection_%d_%d", indices[0], indices[1]), 800, 800);
+    else if (indices.size() == 3) cPhiK0SInvMassProjection = new TCanvas(Form("cPhiK0SInvMassProjection_%d_%d_%d", indices[0], indices[1], indices[2]), Form("cPhiK0SInvMassProjection_%d_%d_%d", indices[0], indices[1], indices[2]), 800, 800);
+    gStyle->SetOptStat(0); 
+
+    cPhiK0SInvMassProjection->cd(1);
+    RooPlot* frameX = x.frame();
+    data.plotOn(frameX);
+    model.plotOn(frameX);
+    model.plotOn(frameX, Components(sigsig), LineStyle(kSolid), LineColor(kGreen), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameX, Components(sigbkg), LineStyle(kSolid), LineColor(kRed), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameX, Components(bkgsig), LineStyle(kSolid), LineColor(kBlack), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameX, Components(bkgbkg), LineStyle(kSolid), LineColor(kMagenta), Normalization(1.0, RooAbsReal::RelativeExpected));
+    frameX->SetTitle("");
+    frameX->SetXTitle("#it{M}(#pi^{+}#pi^{#minus}) (GeV/#it{c}^{2})");
+    frameX->SetYTitle("Counts");
+    frameX->Draw();
+
+    // Aggiungi le linee verticali per i tagli
+    TLine* line1 = new TLine(lowfitK0S, frameX->GetMinimum(), lowfitK0S, frameX->GetMaximum());
+    TLine* line2 = new TLine(upfitK0S, frameX->GetMinimum(), upfitK0S, frameX->GetMaximum());
+
+    line1->SetLineColor(kRed);
+    line1->SetLineStyle(kDashed);
+    line1->Draw("same");
+
+    line2->SetLineColor(kRed);
+    line2->SetLineStyle(kDashed);
+    line2->Draw("same");
+
+    cPhiK0SInvMassProjection->cd(2);
+    RooPlot* frameY = y.frame();
+    data.plotOn(frameY);
+    model.plotOn(frameY);
+    model.plotOn(frameY, Components(sigsig), LineStyle(kSolid), LineColor(kGreen), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameY, Components(sigbkg), LineStyle(kSolid), LineColor(kRed), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameY, Components(bkgsig), LineStyle(kSolid), LineColor(kBlack), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model.plotOn(frameY, Components(bkgbkg), LineStyle(kSolid), LineColor(kMagenta), Normalization(1.0, RooAbsReal::RelativeExpected));
+    frameY->SetTitle("");
+    frameY->SetXTitle("#it{M}(K^{+}K^{#minus}) (GeV/#it{c}^{2})");
+    frameY->SetYTitle("Counts");
+    frameY->Draw();*/
+
+    file->cd();
+    cPhiK0SInvMass->Write();
+    //cPhiK0SInvMassProjection->Write();
+    delete cPhiK0SInvMass;
+    //delete cPhiK0SInvMassProjection;
+
+    // Calcola l'integrale della funzione prodotto nel range specificato
+    mass1->setRange("signal", lowfitK0S, upfitK0S);
+    mass2->setRange("signal", lowfitPhi, upfitPhi);
+
+    RooAbsPdf* sigsig = mWorkspace->pdf("sigsig");
+    RooAbsReal* nsigsig = mWorkspace->var("nsigsig");
+    RooAbsReal* integralsigsig = sigsig->createIntegral(RooArgSet(*mass1, *mass2), NormSet(*mass1, *mass2), Range("signal"));
+
+    RooProduct sigyield("sigyield", "sigyield", RooArgList(*nsigsig, *integralsigsig));
+    Double_t PhiK0SYieldpTdiff = sigyield.getVal();
+    Double_t errPhiK0SYieldpTdiff = sigyield.getPropagatedError(*result, RooArgSet(*mass1, *mass2));
+
+    return std::make_pair(PhiK0SYieldpTdiff, errPhiK0SYieldpTdiff);
+}
+
+std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiPi2(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma, TFile* file)
+{
+    mWorkspace = new RooWorkspace("mWorkspace");
+    FillWorkspace(indices);
+
+    RooRealVar* nSigmaSig = mWorkspace->var("nSigma");
+    RooRealVar* mass2 = mWorkspace->var("mass2");
+
+    RooDataHist dataHistogram("dataHistogram", "dataHistogram", RooArgList(*nSigmaSig, *mass2), mSetHisto[indices]);
+    RooAbsPdf* model;
+    if (isTPCOrTOF == 0) {
+        model = mWorkspace->pdf("dsCrystalBallMultGaussTPCVoigt");
+    } else if (isTPCOrTOF == 1) {
+        model = mWorkspace->pdf("dsCrystalBallMultGaussTOFVoigt");
+    } else {
+        throw std::invalid_argument("Invalid TPC/TOF option specified.");
+    }
+
+    RooFitResult* result = model->fitTo(dataHistogram, Optimize(1), Extended(1), Save(1));
+
+    RooArgSet observables(*nSigmaSig, *mass2);
+    RooArgSet* params = model->getParameters(observables);
+    for (RooAbsArg* param : *params) {
+        if (auto* var = dynamic_cast<RooRealVar*>(param)) {
+            var->Print();
+        }
+    }
+
+    RooRealVar* meanCB = mWorkspace->var("meanCB_2");
+    RooRealVar* sigmaCB = mWorkspace->var("sigmaCB_2");
+
+    Int_t lowedgePi = mSetHisto[indices]->GetXaxis()->FindFixBin(meanCB->getVal() - nSigma * sigmaCB->getVal());
+    Int_t upedgePi = mSetHisto[indices]->GetXaxis()->FindFixBin(meanCB->getVal() + nSigma * sigmaCB->getVal());
+
+    Double_t lowfitPi = mSetHisto[indices]->GetXaxis()->GetBinLowEdge(lowedgePi);
+    Double_t upfitPi = mSetHisto[indices]->GetXaxis()->GetBinLowEdge(upedgePi +1);
+
+    RooRealVar* meanV = mWorkspace->var("meanV");
+    RooRealVar* width = mWorkspace->var("width");
+
+    Int_t lowedgePhi = mSetHisto[indices]->GetYaxis()->FindFixBin(meanV->getVal() - 2. * width->getVal());
+    Int_t upedgePhi = mSetHisto[indices]->GetYaxis()->FindFixBin(meanV->getVal() + 2. * width->getVal());
+
+    Double_t lowfitPhi = mSetHisto[indices]->GetYaxis()->GetBinLowEdge(lowedgePhi);
+    Double_t upfitPhi = mSetHisto[indices]->GetYaxis()->GetBinLowEdge(upedgePhi +1);
+
+    TCanvas* cPhiPiInvMass;
+    if (indices.size() == 2) cPhiPiInvMass = new TCanvas(Form("cPhiPiInvMass_%d_%d", indices[0], indices[1]), Form("cPhiPiInvMass_%d_%d", indices[0], indices[1]), 800, 800);
+    else if (indices.size() == 3) cPhiPiInvMass = new TCanvas(Form("cPhiPiInvMass_%d_%d_%d", indices[0], indices[1], indices[2]), Form("cPhiPiInvMass_%d_%d_%d", indices[0], indices[1], indices[2]), 800, 800);
+    cPhiPiInvMass->cd();
+    gPad->SetMargin(0.16,0.03,0.13,0.06);
+    gStyle->SetOptStat(0);
+
+    /*RooPlot* frame = x.frame();
+    frame->SetTitle("; #it{M}(#pi^{#pm} + #pi^{#mp}) (GeV/#it{c}^{2}); Counts");
+    if (indices.size() == 2) {
+        frame->SetName(Form("frame_%d_%d", indices[0], indices[1]));
+        frame->SetTitle(Form("Mult int, %f - %f (GeV/#it{c}); n#sigma(#pi^{#pm}); Counts", pTPi_axis[indices[1]], pTPi_axis[indices[1]+1]));
+    }
+    else if (indices.size() == 3) {
+        frame->SetName(Form("frame_%d_%d_%d", indices[0], indices[1], indices[2]));
+        frame->SetTitle(Form("%f - %f %%, %f - %f (GeV/#it{c}); n#sigma(#pi^{#pm}); Counts", mult_axis[indices[1]], mult_axis[indices[1]+1], pTPi_axis[indices[2]], pTPi_axis[indices[2]+1]));
+    }
+    data.plotOn(frame);
+    model->plotOn(frame);
+    model->plotOn(frame, Components(dsCrystalBall), LineColor(kRed), LineStyle(kSolid), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model->plotOn(frame, Components(gauss1), LineColor(kGreen), LineStyle(kSolid), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model->plotOn(frame, Components(gauss2), LineColor(kGreen), LineStyle(kSolid), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model->plotOn(frame, Components(gauss3), LineColor(kGreen), LineStyle(kSolid), Normalization(1.0, RooAbsReal::RelativeExpected));
+    model->plotOn(frame, Components(gauss4), LineColor(kOrange), LineStyle(kSolid), Normalization(1.0, RooAbsReal::RelativeExpected));
+    frame->Draw();*/      
+
+    mSetHisto[indices]->Draw("LEGO2");
+    mSetHisto[indices]->SetTitle("; n#sigma(#pi^{#pm}); #it{M}(K^{+}K^{#minus}) (GeV/#it{c}^{2}); Counts");
+    mSetHisto[indices]->GetXaxis()->SetTitleOffset(1.7);
+    mSetHisto[indices]->GetXaxis()->SetLabelSize(0.03);
+    mSetHisto[indices]->GetYaxis()->SetTitleOffset(2.3);
+    mSetHisto[indices]->GetYaxis()->SetLabelSize(0.03);
+    mSetHisto[indices]->GetZaxis()->SetTitleOffset(1.7);
+    mSetHisto[indices]->GetZaxis()->SetLabelSize(0.03);
+
+    TH2F* hist2D_fit = (TH2F*)model->createHistogram("hist2D_fit", *nSigmaSig, Binning(mSetHisto[indices]->GetNbinsX()), YVar(*mass2, Binning(mSetHisto[indices]->GetNbinsY())));
+    hist2D_fit->SetLineColor(kRed);
+    hist2D_fit->GetZaxis()->SetTitleOffset(1.5);
+    hist2D_fit->Draw("SURF SAME");
+
+    file->cd();
+    cPhiPiInvMass->Write();
+    delete cPhiPiInvMass;
+
+    // Calcola l'integrale della funzione prodotto nel range specificato
+    nSigmaSig->setRange("signal", lowfitPi, upfitPi);
+    mass2->setRange("signal", lowfitPhi, upfitPhi);
+
+    RooAbsPdf* sigsig = mWorkspace->pdf("sigsig");
+    RooAbsReal* nsigsig = mWorkspace->var("nsigsig");
+    RooAbsReal* integralsigsig = sigsig->createIntegral(RooArgSet(*nSigmaSig, *mass2), NormSet(*nSigmaSig, *mass2), Range("signal"));
+
+    RooProduct sigyield("sigyield", "sigyield", RooArgList(*nsigsig, *integralsigsig));
+    Double_t PhiPiYieldpTdiff = sigyield.getVal();
+    Double_t errPhiPiYieldpTdiff = sigyield.getPropagatedError(*result, RooArgSet(*nSigmaSig, *mass2));
+
+    return std::make_pair(PhiPiYieldpTdiff, errPhiPiYieldpTdiff);
+}
+
+std::pair<Double_t, Double_t> LFInvMassFitter::DoFit(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma, TFile* file)
+{
+    switch (mParticleType) {
+        case ParticleType::PhiK0S:
+            return FitPhiK0S2(indices, 6.0, file);
+        case ParticleType::PhiPion:
+            return FitPhiPi2(indices, isTPCOrTOF, isDataOrMcReco, 4.0, file);
+        default:
+            throw std::invalid_argument("Invalid association type specified.");
+    }
+}
+
+std::pair<Double_t, Double_t> LFInvMassFitter::DoFit2(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma)
+{
+    mWorkspace = new RooWorkspace("mWorkspace");
+    FillWorkspace(indices);
+
+    RooDataHist* dataHistogram;
+    RooAbsPdf* model;
+
+    RooRealVar* observable1;
+    RooRealVar* observable2 = mWorkspace->var("mass2");
+
+    switch (mParticleType) {
+        case ParticleType::PhiK0S:
+            observable1 = mWorkspace->var("mass1");
+            dataHistogram = new RooDataHist("dataHistogram", "dataHistogram", RooArgList(*observable1, *observable2), mSetHisto[indices]);
+            model = mWorkspace->pdf("dsCrystalBallVoigt");
+
+        case ParticleType::PhiPion:
+            observable1 = mWorkspace->var("nSigma");
+            dataHistogram = new RooDataHist("dataHistogram", "dataHistogram", RooArgList(*observable1, *observable2), mSetHisto[indices]);
+            model = mWorkspace->pdf("dsCrystalBallMultGaussTPCVoigt");
+
+        default:
+            throw std::invalid_argument("Invalid association type specified.");
+    }
+
+    RooFitResult* result = model->fitTo(*dataHistogram, Optimize(1), Extended(1), Save(1));
+}
+
 void LFInvMassFitter::ExportYields(Int_t nbin_pT, const std::vector<Double_t>& pT_axis, const std::string& hSetName, Int_t isTPCOrTOF) 
+{
+    std::unique_ptr<TFile> outputFile(TFile::Open(mOutputFileName.c_str(), "RECREATE"));
+    if (!outputFile || outputFile->IsZombie()) {
+        std::cerr << "Error opening output file: " << mOutputFileName << std::endl;
+        return;
+    }
+    
+    for (int i = 0; i < nbin_deltay; i++) {
+        for (int j = 0; j < nbin_mult; j++) {
+            std::string hName = hSetName + "_" + std::to_string(i) + "_" + std::to_string(j);
+            TH1* h1PhiAssocYield = new TH1D(hName.c_str(), hName.c_str(), nbin_pT, pT_axis.data());       
+            h1PhiAssocYield->SetTitle(Form("; #it{p}_{T} (GeV/#it{c}); 1/N_{ev,#phi} d^{2}N_{%s}/d#it{y}d#it{p}_{T} [(GeV/#it{c})^{-1}]", PartToSymbol(mParticleType).c_str()));
+
+            for (int k = 0; k < nbin_pT; k++) {
+                std::cout << "Processing bin: " << i << ", " << j << ", " << k << std::endl;
+                auto [PhiAssocYieldpTdiff, errPhiAssocYieldpTdiff] = FitPhiAssoc(mSetHisto2D[i][j][k], {i, j, k}, isTPCOrTOF, mMode, outputFile.get());
+                PhiAssocYieldpTdiff /= deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pT_axis[k+1] - pT_axis[k]) /*/ mNEvents*/;
+                errPhiAssocYieldpTdiff /= deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pT_axis[k+1] - pT_axis[k]) /*/ mNEvents*/;
+
+                h1PhiAssocYield->SetBinContent(k + 1, PhiAssocYieldpTdiff);
+                h1PhiAssocYield->SetBinError(k + 1, errPhiAssocYieldpTdiff);
+            }
+
+            SetHistoStyle(h1PhiAssocYield, Colors[j]);
+
+            outputFile->cd();
+            h1PhiAssocYield->Write();
+            delete h1PhiAssocYield;
+        }
+    }
+}
+
+void LFInvMassFitter::ExportYields2(Int_t nbin_pT, const std::vector<Double_t>& pT_axis, const std::string& hSetName, Int_t isTPCOrTOF) 
 {
     std::unique_ptr<TFile> outputFile(TFile::Open(mOutputFileName.c_str(), "RECREATE"));
     if (!outputFile || outputFile->IsZombie()) {
@@ -681,15 +1002,11 @@ void LFInvMassFitter::ExportYields(Int_t nbin_pT, const std::vector<Double_t>& p
     }
 }*/
 
-void LFInvMassFitter::FillWorkspace(RooWorkspace& workspace, std::pair<Double_t, Double_t> limits1, std::pair<Double_t, Double_t> limits2, 
-                                    std::pair<Double_t, Double_t> limits3, std::vector<Int_t> indices) const // To be changed with member limits 
+void LFInvMassFitter::FillWorkspace(std::vector<Int_t> indices) const // Maybe to be changed with member limits 
 {
-    RooRealVar mass1("mass1", "mass1", limits1.first, limits1.second);
-    workspace.import(mass1);
-    RooRealVar mass2("mass2", "mass2", limits2.first, limits2.second);
-    workspace.import(mass2);
-    RooRealVar nSigma("nSigma", "nSigma", limits3.first, limits3.second);
-    workspace.import(nSigma);
+    RooRealVar mass1("mass1", "mass1", 0.45f, 0.55f);
+    RooRealVar mass2("mass2", "mass2", 0.9f, 1.2f);
+    RooRealVar nSigma("nSigma", "nSigma", -10.f, 10.f);
 
     RooRealVar alpha1CB_1("alpha1CB_1", "alpha1CB_1", 1., 1., 2.);
     RooRealVar alpha2CB_1("alpha2CB_1", "alpha2CB_1", 1., 1., 2.);
@@ -725,7 +1042,7 @@ void LFInvMassFitter::FillWorkspace(RooWorkspace& workspace, std::pair<Double_t,
 
     // Modello per Phi-K0S
     RooAddPdf dsCrystalBallVoigt("dsCrystalBallVoigt", "dsCrystalBallVoigt", RooArgList(sigsig_1, sigbkg_1, bkgsig, bkgbkg), RooArgList(nsigsig_1, nsigbkg_1, nbkgsig, nbkgbkg));
-    workspace.import(dsCrystalBallVoigt);
+    mWorkspace->import(dsCrystalBallVoigt);
 
     RooRealVar alpha1CB_2("alpha1CB_2", "alpha1CB_2", 1., 1., 5.);
     RooRealVar alpha2CB_2("alpha2CB_2", "alpha2CB_2", 1., 1., 5.);
@@ -774,33 +1091,33 @@ void LFInvMassFitter::FillWorkspace(RooWorkspace& workspace, std::pair<Double_t,
     RooRealVar nmissig4bkg("nmissig4bkg", "nmissig4bkg", 5000, 0, 500000);
 
     // Modello per Phi-Pi con TPC
-    RooAddPdf* dsCrystalBallMultGaussTPC;
+    RooAddPdf* dsCrystalBallMultGaussTPCVoigt;
     if (indices.size() == 2) {
-        if (indices[1] < 6) dsCrystalBallMultGaussTPC = new RooAddPdf("dsCrystalBallMultGaussTPC", "dsCrystalBallMultGaussTPC", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
-        else dsCrystalBallMultGaussTPC = new RooAddPdf("dsCrystalBallMultGaussTPC", "dsCrystalBallMultGaussTPC", RooArgList(sigsig_2, missig3sig, sigbkg_2, missig3bkg), RooArgList(nsigsig_2, nmissig3sig, nsigbkg_2, nmissig3bkg));
+        if (indices[1] < 6) dsCrystalBallMultGaussTPCVoigt = new RooAddPdf("dsCrystalBallMultGaussTPCVoigt", "dsCrystalBallMultGaussTPCVoigt", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
+        else dsCrystalBallMultGaussTPCVoigt = new RooAddPdf("dsCrystalBallMultGaussTPCVoigt", "dsCrystalBallMultGaussTPCVoigt", RooArgList(sigsig_2, missig3sig, sigbkg_2, missig3bkg), RooArgList(nsigsig_2, nmissig3sig, nsigbkg_2, nmissig3bkg));
     } else if (indices.size() == 3) {
-        if (indices[2] < 6) dsCrystalBallMultGaussTPC = new RooAddPdf("dsCrystalBallMultGaussTPC", "dsCrystalBallMultGaussTPC", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
-        else dsCrystalBallMultGaussTPC = new RooAddPdf("dsCrystalBallMultGaussTPC", "dsCrystalBallMultGaussTPC", RooArgList(sigsig_2, missig3sig, sigbkg_2, missig3bkg), RooArgList(nsigsig_2, nmissig3sig, nsigbkg_2, nmissig3bkg));
+        if (indices[2] < 6) dsCrystalBallMultGaussTPCVoigt = new RooAddPdf("dsCrystalBallMultGaussTPCVoigt", "dsCrystalBallMultGaussTPCVoigt", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
+        else dsCrystalBallMultGaussTPCVoigt = new RooAddPdf("dsCrystalBallMultGaussTPCVoigt", "dsCrystalBallMultGaussTPCVoigt", RooArgList(sigsig_2, missig3sig, sigbkg_2, missig3bkg), RooArgList(nsigsig_2, nmissig3sig, nsigbkg_2, nmissig3bkg));
     }
-    workspace.import(*dsCrystalBallMultGaussTPC);
+    mWorkspace->import(*dsCrystalBallMultGaussTPCVoigt);
 
     // Modello per Phi-Pi con TOF
-    RooAddPdf* dsCrystalBallMultGaussTOF;
+    RooAddPdf* dsCrystalBallMultGaussTOFVoigt;
     if (indices.size() == 2){
         if (indices[1] < 6) {
-            if (indices[1] == 1) dsCrystalBallMultGaussTOF = new RooAddPdf("mdsCrystalBallMultGaussTOFdel", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, missig1sig, sigbkg_2, missig1bkg), RooArgList(nsigsig_2, nmissig1sig, nsigbkg_2, nmissig1bkg));
-            else dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, sigbkg_2), RooArgList(nsigsig_2, nsigbkg_2));
+            if (indices[1] == 1) dsCrystalBallMultGaussTOFVoigt = new RooAddPdf("mdsCrystalBallMultGaussTOFdel", "dsCrystalBallMultGaussTOFVoigt", RooArgList(sigsig_2, missig1sig, sigbkg_2, missig1bkg), RooArgList(nsigsig_2, nmissig1sig, nsigbkg_2, nmissig1bkg));
+            else dsCrystalBallMultGaussTOFVoigt = new RooAddPdf("dsCrystalBallMultGaussTOFVoigt", "dsCrystalBallMultGaussTOFVoigt", RooArgList(sigsig_2, sigbkg_2), RooArgList(nsigsig_2, nsigbkg_2));
         }
-        else dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
+        else dsCrystalBallMultGaussTOFVoigt = new RooAddPdf("dsCrystalBallMultGaussTOFVoigt", "dsCrystalBallMultGaussTOFVoigt", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
     } else if (indices.size() == 3) {
         if (indices[2] < 6) {
-            if (indices[2] == 1) dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, missig1sig, sigbkg_2, missig1bkg), RooArgList(nsigsig_2, nmissig1sig, nsigbkg_2, nmissig1bkg));
-            else dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, sigbkg_2), RooArgList(nsigsig_2, nsigbkg_2));
+            if (indices[2] == 1) dsCrystalBallMultGaussTOFVoigt = new RooAddPdf("dsCrystalBallMultGaussTOFVoigt", "dsCrystalBallMultGaussTOFVoigt", RooArgList(sigsig_2, missig1sig, sigbkg_2, missig1bkg), RooArgList(nsigsig_2, nmissig1sig, nsigbkg_2, nmissig1bkg));
+            else dsCrystalBallMultGaussTOFVoigt = new RooAddPdf("dsCrystalBallMultGaussTOFVoigt", "dsCrystalBallMultGaussTOFVoigt", RooArgList(sigsig_2, sigbkg_2), RooArgList(nsigsig_2, nsigbkg_2));
         }
-        else dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "dsCrystalBallMultGaussTOF", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
-        if (indices[0] == 2 && indices[1] == 9 && (indices[2] == 4 || indices[2] == 5)) dsCrystalBallMultGaussTOF = new RooAddPdf("dsCrystalBallMultGaussTOF", "moddsCrystalBallMultGaussTOFel", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
+        else dsCrystalBallMultGaussTOFVoigt = new RooAddPdf("dsCrystalBallMultGaussTOFVoigt", "dsCrystalBallMultGaussTOFVoigt", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
+        if (indices[0] == 2 && indices[1] == 9 && (indices[2] == 4 || indices[2] == 5)) dsCrystalBallMultGaussTOFVoigt = new RooAddPdf("dsCrystalBallMultGaussTOFVoigt", "moddsCrystalBallMultGaussTOFel", RooArgList(sigsig_2, missig2sig, sigbkg_2, missig2bkg), RooArgList(nsigsig_2, nmissig2sig, nsigbkg_2, nmissig2bkg));
     }
-    workspace.import(*dsCrystalBallMultGaussTOF);
+    mWorkspace->import(*dsCrystalBallMultGaussTOFVoigt);
 
     /*else if (isDataOrMcReco == 1) {
         if (isTPCOrTOF == 0) {
