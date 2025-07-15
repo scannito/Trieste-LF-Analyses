@@ -134,12 +134,13 @@ void EfficiencyHandler::ExportCorrectionsForCCDB()
         outputList->SetName("ccdb_object");
     }
 
-    if (mParticleType != ParticleType::Pi) {
-        TH3* combinedEffHist = GetCombinedEfficiencyHistogram();
-        if (combinedEffHist) {
-            outputList->Add(combinedEffHist);
-        }
-    } else {
+    
+    TH3* combinedEffHist = GetCombinedEfficiencyHistogram();
+    if (combinedEffHist) {
+        outputList->Add(combinedEffHist);
+    }
+
+    if (mParticleType == ParticleType::Pi) {
         TH3* combinedEffHist2 = GetCombinedEfficiencyHistogram2();
         if (combinedEffHist2) {
             outputList->Add(combinedEffHist2);
