@@ -11,8 +11,8 @@
 #include "JSONReader.h"
 #include "EfficiencyHandler.h"
 
-EfficiencyHandler::EfficiencyHandler(const std::string& assoc, const char* filename, const std::vector<std::string>& requiredKeys) : 
-                                     mParticleType(StringToPart(assoc))
+EfficiencyHandler::EfficiencyHandler(const std::string& part, const char* filename, const std::vector<std::string>& requiredKeys) : 
+                                     mParticleType(StringToPart(part))
 {
     JSONReader jsonReader(filename, requiredKeys);
     HistogramsAcquisition(jsonReader.GetMeta());
@@ -42,10 +42,10 @@ void EfficiencyHandler::HistogramsAcquisition(const std::map<std::string, std::s
     std::cout << "Directory of cloned reco histogram: " << mRecoHistogram->GetDirectory() << std::endl;
     delete tempRecoHistogram; // Clean up the original pointer
 
-    if (mParticleType == ParticleType::Pi) {
-        TH3* tempReco2Histogram = (TH3*)inputFile->Get(meta.at("reco2Path").c_str());
+    if (mParticleType == ParticleType::Pion) {
+        TH3* tempReco2Histogram = (TH3*)inputFile->Get(meta.at("recoPath2").c_str());
         if (!tempReco2Histogram) {
-            std::cerr << "Error retrieving TObject: " << meta.at("reco2Path") << std::endl;
+            std::cerr << "Error retrieving TObject: " << meta.at("recoPath2") << std::endl;
             return;
         }
         TH3* cloneReco2 = (TH3*)tempReco2Histogram->Clone("CloneReco2");
@@ -82,10 +82,9 @@ void EfficiencyHandler::HistogramsAcquisition(const std::map<std::string, std::s
 
 void EfficiencyHandler::ExportCorrections()
 {
-    std::unique_ptr<TFile> outputFile =  std::unique_ptr<TFile>(TFile::Open(mOutputFileName.c_str(), "RECREATE"));
+    std::unique_ptr<TFile> outputFile =  std::unique_ptr<TFile>(TFile::Open(mOutputFileName.c_str(), "UPDATE"));
     if (!outputFile || outputFile->IsZombie()) {
-        std::cerr << "Error opening output file: " << mOutputFileName << std::endl;
-        return;
+        outputFile = std::unique_ptr<TFile>(TFile::Open(mOutputFileName.c_str(), "RECREATE"));
     }
 
     TH3* efficiencyHist = GetEfficiencyHistogram();
@@ -106,7 +105,7 @@ void EfficiencyHandler::ExportCorrections()
         delete combinedEffHist;
     }
 
-    if (mParticleType == ParticleType::Pi) {
+    if (mParticleType == ParticleType::Pion) {
         TH3* efficiencyHist2 = GetEfficiencyHistogram2();
         if (efficiencyHist2) {
             efficiencyHist2->Write();
@@ -134,13 +133,24 @@ void EfficiencyHandler::ExportCorrectionsForCCDB()
         outputList->SetName("ccdb_object");
     }
 
-    
-    TH3* combinedEffHist = GetCombinedEfficiencyHistogram();
+    // To be changed according to online requirements
+    /*TH3* combinedEffHist = GetCombinedEfficiencyHistogram();
     if (combinedEffHist) {
         outputList->Add(combinedEffHist);
     }
 
-    if (mParticleType == ParticleType::Pi) {
+    if (mParticleType == ParticleType::Pion) {
+        TH3* combinedEffHist2 = GetCombinedEfficiencyHistogram2();
+        if (combinedEffHist2) {
+            outputList->Add(combinedEffHist2);
+        }
+    }*/
+    if (mParticleType != ParticleType::Pion) {
+        TH3* combinedEffHist = GetCombinedEfficiencyHistogram();
+        if (combinedEffHist) {
+            outputList->Add(combinedEffHist);
+        }
+    } else {
         TH3* combinedEffHist2 = GetCombinedEfficiencyHistogram2();
         if (combinedEffHist2) {
             outputList->Add(combinedEffHist2);
@@ -162,7 +172,7 @@ TH3* EfficiencyHandler::GetEfficiencyHistogram()
         std::cout << "Reco and GenAssocReco histograms are initialized." << std::endl;
         std::cout << "Cloning histogram: " << mRecoHistogram->GetName() << std::endl;
     }
-    TH3* efficiencyHist = (TH3*)mRecoHistogram->Clone("EfficiencyHistogram");
+    TH3* efficiencyHist = (TH3*)mRecoHistogram->Clone(Form("EfficiencyHistogram%s", PartToString(mParticleType).c_str()));
     std::cout << "Efficiency histogram cloned." << std::endl;
     efficiencyHist->Divide(mRecoHistogram.get(), mGenAssocRecoHistogram.get(), 1, 1, "B");
 
@@ -172,7 +182,7 @@ TH3* EfficiencyHandler::GetEfficiencyHistogram()
 
 TH3* EfficiencyHandler::GetEfficiencyHistogram2()
 {
-    if (mParticleType != ParticleType::Pi) {
+    if (mParticleType != ParticleType::Pion) {
         std::cerr << "Error: This method is only applicable for Pi particle type." << std::endl;
         return nullptr;
     }
@@ -180,7 +190,7 @@ TH3* EfficiencyHandler::GetEfficiencyHistogram2()
         std::cerr << "Error: Reco2 or Reco histogram is not initialized." << std::endl;
         return nullptr;
     }
-    TH3* efficiencyHist2 = (TH3*)mReco2Histogram->Clone("EfficiencyHistogram2");
+    TH3* efficiencyHist2 = (TH3*)mReco2Histogram->Clone(Form("EfficiencyHistogram2%s", PartToString(mParticleType).c_str()));
     efficiencyHist2->Divide(mReco2Histogram.get(), mRecoHistogram.get(), 1, 1, "B");
 
     return efficiencyHist2;
@@ -188,7 +198,7 @@ TH3* EfficiencyHandler::GetEfficiencyHistogram2()
 
 TH3* EfficiencyHandler::GetSignalLossHistogram()
 {
-    TH3* signalLossHist = (TH3*)mGenAssocRecoHistogram->Clone("SignalLossHistogram");
+    TH3* signalLossHist = (TH3*)mGenAssocRecoHistogram->Clone(Form("SignalLossHistogram%s", PartToString(mParticleType).c_str()));
     signalLossHist->Divide(mGenAssocRecoHistogram.get(), mGenHistogram.get(), 1, 1, "B");
 
     return signalLossHist;
@@ -198,18 +208,20 @@ TH3* EfficiencyHandler::GetCombinedEfficiencyHistogram()
 {
     TH3* combinedHist = GetEfficiencyHistogram();
     combinedHist->Multiply(GetSignalLossHistogram());
+    combinedHist->SetName(Form("h3Efficiency%s", PartToString(mParticleType).c_str()));
 
     return combinedHist;
 }
 
 TH3* EfficiencyHandler::GetCombinedEfficiencyHistogram2()
 {
-    if (mParticleType != ParticleType::Pi) {
+    if (mParticleType != ParticleType::Pion) {
         std::cerr << "Error: This method is only applicable for Pi particle type." << std::endl;
         return nullptr;
     }
     TH3* combinedHist2 = GetEfficiencyHistogram2();
     combinedHist2->Multiply(GetSignalLossHistogram());
+    combinedHist2->SetName(Form("h3Efficiency%s", PartToString(mParticleType).c_str()));
 
     return combinedHist2;
 }

@@ -9,12 +9,12 @@
 #include <map>
 
 #include "AnalysisUtils/ParticleTypes.h"
-
+ 
 class EfficiencyHandler
 {
 public:
     EfficiencyHandler() = default;
-    EfficiencyHandler(const std::string& assoc, const char* filename, const std::vector<std::string>& requiredKeys);
+    EfficiencyHandler(const std::string& part, const char* filename, const std::vector<std::string>& requiredKeys);
     ~EfficiencyHandler() = default;
 
     void ExportCorrections();

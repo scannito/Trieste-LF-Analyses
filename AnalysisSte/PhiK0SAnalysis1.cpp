@@ -113,18 +113,18 @@ int runEfficiencyHandler(int argc, char* argv[])
     std::vector<std::string> requiredKeys1 = {"inputFile", "recoPath", "genPath", "genAssocRecoPath", "outputFile"};
 
     EfficiencyHandler PhiEfficiencyHandler("Phi", argv[1], requiredKeys1);
-    PhiEfficiencyHandler.ExportCorrections();
-    //PhiEfficiencyHandler.ExportCorrectionsForCCDB();
+    //PhiEfficiencyHandler.ExportCorrections();
+    PhiEfficiencyHandler.ExportCorrectionsForCCDB();
 
-    //EfficiencyHandler K0SEfficiencyHandler("K0S", argv[2], requiredKeys1);
+    EfficiencyHandler K0SEfficiencyHandler("K0S", argv[2], requiredKeys1);
     //K0SEfficiencyHandler.ExportCorrections();
-    //K0SEfficiencyHandler.ExportCorrectionsForCCDB();
+    K0SEfficiencyHandler.ExportCorrectionsForCCDB();
 
-    std::vector<std::string> requiredKeys2 = {"inputFile", "recoPath1", "recoPath2", "genPath", "genAssocRecoPath", "outputFile"};
+    std::vector<std::string> requiredKeys2 = {"inputFile", "recoPath", "recoPath2", "genPath", "genAssocRecoPath", "outputFile"};
 
-    //EfficiencyHandler PiEfficiencyHandler("Pi", argv[3], requiredKeys2);
+    EfficiencyHandler PiEfficiencyHandler("Pion", argv[3], requiredKeys2);
     //PiEfficiencyHandler.ExportCorrections();
-    //PiEfficiencyHandler.ExportCorrectionsForCCDB();
+    PiEfficiencyHandler.ExportCorrectionsForCCDB();
 
     return 0;
 }

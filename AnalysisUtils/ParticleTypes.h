@@ -3,44 +3,44 @@
 #include <string>
 #include <map>
 
-enum class ParticleType { Phi, K0S, Pi, PhiK0S, PhiPi, Unknown };
+enum class ParticleType { Phi, K0S, Pion, PhiK0S, PhiPion, Unknown };
 
-inline ParticleType StringToPart(const std::string& assoc) 
+inline ParticleType StringToPart(const std::string& part) 
 {
     std::map<std::string, ParticleType> map = {
         {"Phi", ParticleType::Phi},
         {"K0S", ParticleType::K0S},
-        {"Pi", ParticleType::Pi},
+        {"Pion", ParticleType::Pion},
         {"Phi-K0S", ParticleType::PhiK0S},
-        {"Phi-Pi", ParticleType::PhiPi}
+        {"Phi-Pi", ParticleType::PhiPion}
     };
 
-    std::string key(assoc);
+    std::string key(part);
 
     auto it = map.find(key);
     return it != map.end() ? it->second : ParticleType::Unknown;
 }
 
-inline std::string PartToString(ParticleType assoc) 
+inline std::string PartToString(ParticleType part) 
 {
-    switch (assoc) {
+    switch (part) {
         case ParticleType::Phi: return "Phi";
         case ParticleType::K0S: return "K0S";
-        case ParticleType::Pi: return "Pi";
+        case ParticleType::Pion: return "Pion";
         case ParticleType::PhiK0S: return "Phi-K0S";
-        case ParticleType::PhiPi: return "Phi-Pi";
+        case ParticleType::PhiPion: return "Phi-Pion";
         default: return "Unknown";
     }
 }
 
-inline std::string PartToSymbol(ParticleType assoc) 
+inline std::string PartToSymbol(ParticleType part) 
 {
-    switch (assoc) {
+    switch (part) {
         case ParticleType::Phi: return "#phi";
         case ParticleType::K0S: return "K^{0}_{S}";
-        case ParticleType::Pi: return "#pi^{+}+#pi^{#minus}";
+        case ParticleType::Pion: return "#pi^{+}+#pi^{#minus}";
         case ParticleType::PhiK0S: return "#phi-K^{0}_{S}";
-        case ParticleType::PhiPi: return "#phi-(#pi^{+}+#pi^{#minus})";
+        case ParticleType::PhiPion: return "#phi-(#pi^{+}+#pi^{#minus})";
         default: return "Unknown";
     }
 }

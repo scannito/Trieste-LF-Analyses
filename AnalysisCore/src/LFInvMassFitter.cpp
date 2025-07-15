@@ -625,7 +625,7 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiAssoc(TH2* h2PhiAssocInvMas
     switch (mParticleType) {
         case ParticleType::PhiK0S:
             return FitPhiK0S(h2PhiAssocInvMass, indices, file/*, params, lowLimits, upLimits*/);
-        case ParticleType::PhiPi:
+        case ParticleType::PhiPion:
             return FitPhiPi(h2PhiAssocInvMass, indices, isTPCOrTOF, isDataOrMcReco, file/*, params, lowLimits, upLimits*/);
         default:
             throw std::invalid_argument("Invalid association type specified.");
