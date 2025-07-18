@@ -22,10 +22,17 @@ inline std::vector<std::vector<AxisCut>> ExpandAxisCuts(const std::vector<AxisCu
         }
 
         const AxisCut& cut = cuts[i];
-        for (int b = cut.binLow; b <= cut.binHigh; ++b) {
+
+        if (cut.binLow == -1) {
             auto tmp = current;
-            tmp.emplace_back(cut.axis, b, b);
+            tmp.emplace_back(cut.axis, 1, cut.binHigh);
             self(self, i + 1, std::move(tmp));
+        } else {
+            for (int b = cut.binLow; b <= cut.binHigh; ++b) {
+                auto tmp = current;
+                tmp.emplace_back(cut.axis, b, b);
+                self(self, i + 1, std::move(tmp));
+            }
         }
     };
 

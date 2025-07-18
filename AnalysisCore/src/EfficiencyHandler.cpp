@@ -7,6 +7,8 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <set>
+#include <filesystem>
 
 #include "JSONReader.h"
 #include "EfficiencyHandler.h"
@@ -122,9 +124,21 @@ void EfficiencyHandler::ExportCorrections()
 
 void EfficiencyHandler::ExportCorrectionsForCCDB()
 {
-    std::unique_ptr<TFile> outputFile =  std::unique_ptr<TFile>(TFile::Open(mOutputFileName.c_str(), "UPDATE"));
+    static std::set<std::string> initializedFiles;
+
+    // Delete the file if it exists, but only once per session
+    if (initializedFiles.find(mOutputFileName) == initializedFiles.end()) {
+        if (std::filesystem::exists(mOutputFileName)) {
+            std::filesystem::remove(mOutputFileName);
+            std::cout << "File " << mOutputFileName << " deleted (first use in this session)." << std::endl;
+        }
+        initializedFiles.insert(mOutputFileName);
+    }
+
+    std::unique_ptr<TFile> outputFile = std::unique_ptr<TFile>(TFile::Open(mOutputFileName.c_str(), "UPDATE"));
     if (!outputFile || outputFile->IsZombie()) {
-        outputFile = std::unique_ptr<TFile>(TFile::Open(mOutputFileName.c_str(), "RECREATE"));
+        std::cerr << "Error opening output file: " << mOutputFileName << std::endl;
+        return;
     }
 
     TList* outputList = (TList*)outputFile->Get("ccdb_object");
@@ -133,24 +147,12 @@ void EfficiencyHandler::ExportCorrectionsForCCDB()
         outputList->SetName("ccdb_object");
     }
 
-    // To be changed according to online requirements
-    /*TH3* combinedEffHist = GetCombinedEfficiencyHistogram();
+    TH3* combinedEffHist = GetCombinedEfficiencyHistogram();
     if (combinedEffHist) {
         outputList->Add(combinedEffHist);
     }
 
     if (mParticleType == ParticleType::Pion) {
-        TH3* combinedEffHist2 = GetCombinedEfficiencyHistogram2();
-        if (combinedEffHist2) {
-            outputList->Add(combinedEffHist2);
-        }
-    }*/
-    if (mParticleType != ParticleType::Pion) {
-        TH3* combinedEffHist = GetCombinedEfficiencyHistogram();
-        if (combinedEffHist) {
-            outputList->Add(combinedEffHist);
-        }
-    } else {
         TH3* combinedEffHist2 = GetCombinedEfficiencyHistogram2();
         if (combinedEffHist2) {
             outputList->Add(combinedEffHist2);
@@ -183,7 +185,7 @@ TH3* EfficiencyHandler::GetEfficiencyHistogram()
 TH3* EfficiencyHandler::GetEfficiencyHistogram2()
 {
     if (mParticleType != ParticleType::Pion) {
-        std::cerr << "Error: This method is only applicable for Pi particle type." << std::endl;
+        std::cerr << "Error: This method is only applicable for Pion particle type." << std::endl;
         return nullptr;
     }
     if (!mReco2Histogram || !mRecoHistogram) {
@@ -208,7 +210,10 @@ TH3* EfficiencyHandler::GetCombinedEfficiencyHistogram()
 {
     TH3* combinedHist = GetEfficiencyHistogram();
     combinedHist->Multiply(GetSignalLossHistogram());
-    combinedHist->SetName(Form("h3Efficiency%s", PartToString(mParticleType).c_str()));
+    if (mParticleType != ParticleType::Pion)
+        combinedHist->SetName(Form("h3Efficiency%s", PartToString(mParticleType).c_str()));
+    else
+        combinedHist->SetName(Form("h3Efficiency%sTPC", PartToString(mParticleType).c_str()));
 
     return combinedHist;
 }
@@ -216,12 +221,12 @@ TH3* EfficiencyHandler::GetCombinedEfficiencyHistogram()
 TH3* EfficiencyHandler::GetCombinedEfficiencyHistogram2()
 {
     if (mParticleType != ParticleType::Pion) {
-        std::cerr << "Error: This method is only applicable for Pi particle type." << std::endl;
+        std::cerr << "Error: This method is only applicable for Pion particle type." << std::endl;
         return nullptr;
     }
     TH3* combinedHist2 = GetEfficiencyHistogram2();
     combinedHist2->Multiply(GetSignalLossHistogram());
-    combinedHist2->SetName(Form("h3Efficiency%s", PartToString(mParticleType).c_str()));
+    combinedHist2->SetName(Form("h3Efficiency%sTPCTOF", PartToString(mParticleType).c_str()));
 
     return combinedHist2;
 }

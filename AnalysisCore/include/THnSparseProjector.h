@@ -35,8 +35,6 @@ public:
 
     void ExportProjections(int nbin_pT, const std::vector<AxisCut>& slicing, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject);
 
-    //void CheckValidMembers();
-
 private:
     std::unique_ptr<THnSparse> mTHnSparse;
 

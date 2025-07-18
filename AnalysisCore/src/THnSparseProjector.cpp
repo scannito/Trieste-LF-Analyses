@@ -20,6 +20,8 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <set>
+#include <filesystem>
 
 #include <rapidjson/document.h>
 
@@ -39,7 +41,18 @@ THnSparseProjector::THnSparseProjector(const char* filename, const std::vector<s
 
 void THnSparseProjector::ExportProjections(int nbin_pT, const std::vector<AxisCut>& slicing, const std::string& hSetName, const std::pair<Int_t, Int_t>& axixtoproject)
 {
-    std::unique_ptr<TFile> outputFile = std::unique_ptr<TFile>(TFile::Open(mOutputFileName.c_str(), "RECREATE"));
+    static std::set<std::string> initializedFiles;
+
+    // Delete the file if it exists, but only once per session
+    if (initializedFiles.find(mOutputFileName) == initializedFiles.end()) {
+        if (std::filesystem::exists(mOutputFileName)) {
+            std::filesystem::remove(mOutputFileName);
+            std::cout << "File " << mOutputFileName << " deleted (first use in this session)." << std::endl;
+        }
+        initializedFiles.insert(mOutputFileName);
+    }
+
+    std::unique_ptr<TFile> outputFile = std::unique_ptr<TFile>(TFile::Open(mOutputFileName.c_str(), "UPDATE"));
     if (!outputFile || outputFile->IsZombie()) {
         std::cerr << "Error opening output file: " << mOutputFileName << std::endl;
         return;
@@ -66,7 +79,7 @@ void THnSparseProjector::ExportProjections(int nbin_pT, const std::vector<AxisCu
         }
     }
 
-    /*for (int i = 1; i <= nbin_deltay; ++i) {
+    /*for (int i = 0; i <= nbin_deltay; ++i) {
         for (int j = 0; j < nbin_mult; ++j) {
             for (int k = 0; k < nbin_pT; ++k) {
                 std::cout << "Writing histogram for delta y bin: " << i << ", mult bin: " << j << ", pT bin: " << k << std::endl;
@@ -119,16 +132,3 @@ TH1* THnSparseProjector::Project1D(const char* hname, const std::vector<AxisCut>
     h2->SetDirectory(0);
     return h2;
 }
-
-/*void THnSparseProjector::CheckValidMembers()
-{
-    if (!mTHnSparse)
-        std::cerr << "Error: mTHnSparse is not initialized." << std::endl;
-    else
-        std::cout << "mTHnSparse is valid." << std::endl;
-
-    if (mOutputFileName.empty())
-        std::cerr << "Error: mOutFileName is not set." << std::endl;
-    else
-        std::cout << "mOutFileName is valid: " << mOutputFileName << std::endl;
-}*/

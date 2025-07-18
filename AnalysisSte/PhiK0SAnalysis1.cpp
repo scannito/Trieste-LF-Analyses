@@ -70,13 +70,13 @@ int runTHnSparseProjector(int argc, char* argv[])
     std::vector<std::string> requiredKeys = {"inputFile", "objectPath", "outputFile"};
 
     THnSparseProjector THnSparseProjectorPhiK0S(argv[1], requiredKeys);
-    std::vector<AxisCut> slicingK0S = {  };
+    std::vector<AxisCut> slicingK0S = { {0, 1, nbin_deltay}, {1, 1, nbin_mult}, {2, -1, nbin_pT::K0S}  };
     THnSparseProjectorPhiK0S.ExportProjections(nbin_pT::K0S, slicingK0S, "h2PhiK0SInvMass", {4, 3});
 
     THnSparseProjector THnSparseProjectorPhiPi(argv[2], requiredKeys);
-    std::vector<AxisCut> slicingPi = {  };
-    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, slicingPi, "h2PhiInvMassPiNSigmaTPC", {5, 3});
-    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, slicingPi, "h2PhiInvMassPiNSigmaTOF", {5, 4});
+    std::vector<AxisCut> slicingPion = { {0, 1, nbin_deltay}, {1, 1, nbin_mult}, {2, -1, nbin_pT::Pi} };
+    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, slicingPion, "h2PhiInvMassPiNSigmaTPC", {5, 3});
+    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, slicingPion, "h2PhiInvMassPiNSigmaTOF", {5, 4});
 
     return 0;
 }
@@ -90,14 +90,14 @@ int runLFInvMassFitter(int argc, char* argv[])
 
     std::vector<std::string> requiredKeys = {"inputFile", "objectsPath", "outputFile"};
 
-    std::vector<AxisCut> slicingK0S = {  };
+    std::vector<AxisCut> slicingK0S = { {0, 1, nbin_deltay}, {1, 1, nbin_mult} };
     LFInvMassFitter PhiK0SFitter("Phi-K0S", argv[1], requiredKeys, slicingK0S, nbin_pT::K0S, "h2PhiK0SInvMass");
     PhiK0SFitter.ExportYields(nbin_pT::K0S, pT_axis::K0S, "h1PhiK0SYield", 0);
 
-    std::vector<AxisCut> slicingPi = {  };
-    LFInvMassFitter PhiPiTPCFitter("Phi-Pi", argv[2], requiredKeys, slicingPi, nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC");
+    std::vector<AxisCut> slicingPion = {  };
+    LFInvMassFitter PhiPiTPCFitter("Phi-Pion", argv[2], requiredKeys, slicingPion, nbin_pT::Pi, "h2PhiInvMassPiNSigmaTPC");
     PhiPiTPCFitter.ExportYields(nbin_pT::Pi, pT_axis::Pi, "h1PhiPiTPCYield", 0);
-    LFInvMassFitter PhiPiTOFFitter("Phi-Pi", argv[2], requiredKeys, slicingPi, nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF");
+    LFInvMassFitter PhiPiTOFFitter("Phi-Pion", argv[2], requiredKeys, slicingPion, nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF");
     PhiPiTOFFitter.ExportYields(nbin_pT::Pi, pT_axis::Pi, "h1PhiPiTOFYield", 1);
     
     return 0;

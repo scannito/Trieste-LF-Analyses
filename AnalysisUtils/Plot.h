@@ -87,7 +87,7 @@ inline std::array<TCanvas*, nbin_deltay> PlotHistograms(TH1D* h1Yield[nbin_delta
         leg1[i]->SetLineWidth(0);
 
         leg2[i] = new TLegend(0.5, 0.62, 0.8, 0.82);
-        leg2[i]->SetHeader(Form("pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < 0.5, %s", yCut[i].c_str()));
+        leg2[i]->SetHeader(Form("pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < %f", deltay_axis[i]));
         leg2[i]->SetTextSize(0.035);
         leg2[i]->SetLineWidth(0);
         leg2[i]->SetNColumns(2);

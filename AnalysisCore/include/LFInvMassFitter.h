@@ -36,8 +36,6 @@ struct Yield
 {
     double  value;
     double  error;
-
-    Yield(double v = 0.0, double e = 0.0) : value(v), error(e) {}
 };
 
 //template <typename H, typename = std::enable_if_t<std::is_base_of_v<TH1, H>>>
@@ -57,16 +55,16 @@ public:
     std::pair<Double_t, Double_t> FitPhiAssoc(TH2* h2PhiAssocInvMass, std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, TFile* file/*,
                                                 const std::vector<Double_t>& params, const std::vector<Double_t>& lowLimits, const std::vector<Double_t>& upLimits*/);
 
-    std::pair<Double_t, Double_t> DoFit(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma, TFile* file);
-    std::pair<Double_t, Double_t> DoFit2(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma);
+    Yield DoFit(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma, TFile* file);
+    Yield DoFit2(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma);
 
     void ExportYields(Int_t nbin_pT, const std::vector<Double_t>& pT_axis, const std::string& hSetName, Int_t isTPCOrTOF);
     void ExportYields2(Int_t nbin_pT, const std::vector<Double_t>& pT_axis, const std::string& hSetName, Int_t isTPCOrTOF);
 
     //void CheckValidMembers();
 
-    RooAbsPdf* CreateBackgroundFitFunction(RooWorkspace* workspace) const;
-    RooAbsPdf* CreateSignalFitFunction(RooWorkspace* workspace);
+    RooAbsPdf* CreateBackgroundFitFunction() const;
+    RooAbsPdf* CreateSignalFitFunction();
 
     void DoFit();
 
@@ -96,8 +94,8 @@ private:
                                             const std::vector<Double_t>& lowLimits = {1., 1., 1., 1., -1., 0.001, 3., 0.001}, 
                                             const std::vector<Double_t>& upLimits = {5., 5., 10., 10., 1.5, 2.5, 10., 5.});
 
-    std::pair<Double_t, Double_t> FitPhiK0S2(std::vector<Int_t> indices, Double_t nSigma, TFile* file);
-    std::pair<Double_t, Double_t> FitPhiPi2(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma, TFile* file);
+    Yield FitPhiK0S2(std::vector<Int_t> indices, Double_t nSigma, TFile* file);
+    Yield FitPhiPi2(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma, TFile* file);
 
     void FillWorkspace(std::vector<Int_t> indices) const;
 

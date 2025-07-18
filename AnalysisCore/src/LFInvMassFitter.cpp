@@ -630,7 +630,7 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiAssoc(TH2* h2PhiAssocInvMas
     }
 }
 
-std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiK0S2(std::vector<Int_t> indices, Double_t nSigma, TFile* file)
+Yield LFInvMassFitter::FitPhiK0S2(std::vector<Int_t> indices, Double_t nSigma, TFile* file)
 {
     mWorkspace = new RooWorkspace("mWorkspace");
     FillWorkspace(indices);
@@ -771,10 +771,10 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiK0S2(std::vector<Int_t> ind
     Double_t PhiK0SYieldpTdiff = sigyield.getVal();
     Double_t errPhiK0SYieldpTdiff = sigyield.getPropagatedError(*result, RooArgSet(*mass1, *mass2));
 
-    return std::make_pair(PhiK0SYieldpTdiff, errPhiK0SYieldpTdiff);
+    return {PhiK0SYieldpTdiff, errPhiK0SYieldpTdiff};
 }
 
-std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiPi2(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma, TFile* file)
+Yield LFInvMassFitter::FitPhiPi2(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma, TFile* file)
 {
     mWorkspace = new RooWorkspace("mWorkspace");
     FillWorkspace(indices);
@@ -876,10 +876,10 @@ std::pair<Double_t, Double_t> LFInvMassFitter::FitPhiPi2(std::vector<Int_t> indi
     Double_t PhiPiYieldpTdiff = sigyield.getVal();
     Double_t errPhiPiYieldpTdiff = sigyield.getPropagatedError(*result, RooArgSet(*nSigmaSig, *mass2));
 
-    return std::make_pair(PhiPiYieldpTdiff, errPhiPiYieldpTdiff);
+    return {PhiPiYieldpTdiff, errPhiPiYieldpTdiff};
 }
 
-std::pair<Double_t, Double_t> LFInvMassFitter::DoFit(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma, TFile* file)
+Yield LFInvMassFitter::DoFit(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma, TFile* file)
 {
     switch (mParticleType) {
         case ParticleType::PhiK0S:
@@ -891,7 +891,7 @@ std::pair<Double_t, Double_t> LFInvMassFitter::DoFit(std::vector<Int_t> indices,
     }
 }
 
-std::pair<Double_t, Double_t> LFInvMassFitter::DoFit2(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma)
+Yield LFInvMassFitter::DoFit2(std::vector<Int_t> indices, Int_t isTPCOrTOF, Int_t isDataOrMcReco, Double_t nSigma)
 {
     mWorkspace = new RooWorkspace("mWorkspace");
     FillWorkspace(indices);
@@ -961,29 +961,7 @@ void LFInvMassFitter::ExportYields2(Int_t nbin_pT, const std::vector<Double_t>& 
         return;
     }
     
-    for (int i = 0; i < nbin_deltay; i++) {
-        for (int j = 0; j < nbin_mult; j++) {
-            std::string hName = hSetName + "_" + std::to_string(i) + "_" + std::to_string(j);
-            TH1* h1PhiAssocYield = new TH1D(hName.c_str(), hName.c_str(), nbin_pT, pT_axis.data());       
-            h1PhiAssocYield->SetTitle(Form("; #it{p}_{T} (GeV/#it{c}); 1/N_{ev,#phi} d^{2}N_{%s}/d#it{y}d#it{p}_{T} [(GeV/#it{c})^{-1}]", PartToSymbol(mParticleType).c_str()));
-
-            for (int k = 0; k < nbin_pT; k++) {
-                std::cout << "Processing bin: " << i << ", " << j << ", " << k << std::endl;
-                auto [PhiAssocYieldpTdiff, errPhiAssocYieldpTdiff] = FitPhiAssoc(mSetHisto2D[i][j][k], {i, j, k}, isTPCOrTOF, mMode, outputFile.get());
-                PhiAssocYieldpTdiff /= deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pT_axis[k+1] - pT_axis[k]) /*/ mNEvents*/;
-                errPhiAssocYieldpTdiff /= deltay_axis[i] / ((mult_axis[j+1] - mult_axis[j]) / 100.0) / (pT_axis[k+1] - pT_axis[k]) /*/ mNEvents*/;
-
-                h1PhiAssocYield->SetBinContent(k + 1, PhiAssocYieldpTdiff);
-                h1PhiAssocYield->SetBinError(k + 1, errPhiAssocYieldpTdiff);
-            }
-
-            SetHistoStyle(h1PhiAssocYield, Colors[j]);
-
-            outputFile->cd();
-            h1PhiAssocYield->Write();
-            delete h1PhiAssocYield;
-        }
-    }
+    
 }
 
 /*void LFInvMassFitter::CheckValidMembers()

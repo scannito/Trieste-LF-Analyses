@@ -12,7 +12,7 @@ inline ParticleType StringToPart(const std::string& part)
         {"K0S", ParticleType::K0S},
         {"Pion", ParticleType::Pion},
         {"Phi-K0S", ParticleType::PhiK0S},
-        {"Phi-Pi", ParticleType::PhiPion}
+        {"Phi-Pion", ParticleType::PhiPion}
     };
 
     std::string key(part);
