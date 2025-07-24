@@ -21,12 +21,12 @@ public:
     void ExportCorrectionsForCCDB();
 
     // To be generalized
-    TH1* GetEfficiencySpectrum(int binMult);
-    TH1* GetEfficiencySpectrum2(int binMult); // Only for Pi (at the moment, in future may be used for other charged particles)
-    TH1* GetCombinedEfficiencySpectrum(int binMult); // Only for Pi (at the moment, in future may be used for other charged particles)
-    TH1* GetSignalLossSpectrum(int binMult);
-    TH1* GetEffXSigLossSpectrum(int binMult);
-    TH1* GetCombEffXSigLossSpectrum(int binMult); // Only for Pi (at the moment, in future may be used for other charged particles)
+    TH1* GetEfficiencySpectrum(int binMult, bool rebin = false, const std::vector<double>& rebinnedpTAxis = std::vector<double>());
+    TH1* GetEfficiencySpectrum2(int binMult, bool rebin = false, const std::vector<double>& rebinnedpTAxis = std::vector<double>()); // Only for Pi (at the moment, in future may be used for other charged particles)
+    TH1* GetCombinedEfficiencySpectrum(int binMult, bool rebin = false, const std::vector<double>& rebinnedpTAxis = std::vector<double>()); // Only for Pi (at the moment, in future may be used for other charged particles)
+    TH1* GetSignalLossSpectrum(int binMult, bool rebin = false, const std::vector<double>& rebinnedpTAxis = std::vector<double>());
+    TH1* GetEffXSigLossSpectrum(int binMult, bool rebin = false, const std::vector<double>& rebinnedpTAxis = std::vector<double>());
+    TH1* GetCombEffXSigLossSpectrum(int binMult, bool rebin = false, const std::vector<double>& rebinnedpTAxis = std::vector<double>()); // Only for Pi (at the moment, in future may be used for other charged particles)
 
 private:
     ParticleType mParticleType = ParticleType::Unknown;

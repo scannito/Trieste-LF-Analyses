@@ -193,7 +193,6 @@ inline std::vector<TCanvas*> PlotSpectra(const std::vector<std::array<TH1*, nbin
             h1Spectrum->SetLineWidth(2);
             h1Spectrum->SetFillStyle(3001);
             h1Spectrum->SetFillColor(Color);
-            //h1Spectrum->GetXaxis()->SetLabelOffset(0.5);
             h1Spectrum->GetYaxis()->SetTitleSize(0.045);
             h1Spectrum->GetYaxis()->SetTitleOffset(1.0);
             h1Spectrum->GetYaxis()->SetLabelSize(0.045);

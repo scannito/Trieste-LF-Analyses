@@ -1,6 +1,6 @@
-# Trieste-LF-Analyses/CMakeLists.txt
+# TriesteLFAnalyses/CMakeLists.txt
 cmake_minimum_required(VERSION 3.10)
-project(Trieste-LF-Analyses CXX)
+project(TriesteLFAnalyses CXX)
 
 # Set standard C++
 set(CMAKE_CXX_STANDARD 20)

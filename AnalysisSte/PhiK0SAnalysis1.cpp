@@ -2,9 +2,9 @@
 #include "TApplication.h"
 #include "TFile.h"
 #include "TLegend.h"
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TH3F.h"
+#include "TH1.h"
+#include "TH2.h"
+#include "TH3.h"
 #include "THnSparse.h"
 #include "TMath.h"
 #include "TCanvas.h"
@@ -30,8 +30,8 @@
 #include "AnalysisUtils/AxesUtils.h"
 
 // Main logics declaration
-int runTHnSparseProjector(int argc, char* argv[]);
-int runLFInvMassFitter(int argc, char* argv[]);
+void runTHnSparseProjector(int argc, char* argv[]);
+void runLFInvMassFitter(int argc, char* argv[]);
 void runEfficiencyHandler(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
@@ -57,9 +57,9 @@ int main(int argc, char* argv[])
     std::cout << "Executing step " << mode << " of Phi-K0S rapidity correlation analysis\n";
 
     if (mode == "projector") {
-        return runTHnSparseProjector(argc - 1, &argv[1]);  // Shift args so that argv[0] = "projector/fitter/effiency"
+        runTHnSparseProjector(argc - 1, &argv[1]);  // Shift args so that argv[0] = "projector/fitter/effiency"
     } else if (mode == "fitter") {
-        return runLFInvMassFitter(argc - 1, &argv[1]);
+        runLFInvMassFitter(argc - 1, &argv[1]);
     } else if (mode == "efficiency") {
         runEfficiencyHandler(argcCopy - 1, &argvCopy[1]);
     } else {
@@ -69,11 +69,11 @@ int main(int argc, char* argv[])
     app.Run();
 }
 
-int runTHnSparseProjector(int argc, char* argv[])
+void runTHnSparseProjector(int argc, char* argv[])
 {
     if (argc < 2) {
         std::cerr << "Usage: projector <inputK0S.json> <inputPi.json>\n";
-        return 1;
+        return;
     }
 
     std::vector<std::string> requiredKeys = {"inputFile", "objectPath", "outputFile"};
@@ -87,15 +87,13 @@ int runTHnSparseProjector(int argc, char* argv[])
     THnSparseProjectorPhiPiTPC.ExportProjections(nbin_pT::Pi, slicingPion, "h2PhiInvMassPiNSigmaTPC", {4, 3});
     THnSparseProjector THnSparseProjectorPhiPiTOF(argv[3], requiredKeys);
     THnSparseProjectorPhiPiTOF.ExportProjections(nbin_pT::Pi, slicingPion, "h2PhiInvMassPiNSigmaTOF", {4, 3});
-
-    return 0;
 }
 
-int runLFInvMassFitter(int argc, char* argv[])
+void runLFInvMassFitter(int argc, char* argv[])
 {
     if (argc < 2) {
         std::cerr << "Usage: fitter <inputFile.json>\n";
-        return 1;
+        return;
     }
 
     std::vector<std::string> requiredKeys = {"inputFile", "objectsPath", "outputFile"};
@@ -109,8 +107,6 @@ int runLFInvMassFitter(int argc, char* argv[])
     PhiPiTPCFitter.ExportYields(nbin_pT::Pi, pT_axis::Pi, "h1PhiPiTPCYield", 0);
     LFInvMassFitter PhiPiTOFFitter("Phi-Pion", argv[2], requiredKeys, slicingPion, nbin_pT::Pi, "h2PhiInvMassPiNSigmaTOF");
     PhiPiTOFFitter.ExportYields(nbin_pT::Pi, pT_axis::Pi, "h1PhiPiTOFYield", 1);
-    
-    return 0;
 }
 
 void runEfficiencyHandler(int argc, char* argv[])
@@ -133,6 +129,20 @@ void runEfficiencyHandler(int argc, char* argv[])
     EfficiencyHandler PiEfficiencyHandler("Pion", argv[3], requiredKeys2);
     //PiEfficiencyHandler.ExportCorrectionsForCCDB();
 
+    std::vector<double> rebinnedpTAxisPhi{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                                          1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
+                                          2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9,
+                                          3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9,
+                                          4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.4, 5.8, 6.2, 6.6, 
+                                          7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 11.0, 12.0};
+    std::vector<double> rebinnedpTAxisK0S{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                                          1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
+                                          2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9,
+                                          3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9,
+                                          4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9,
+                                          5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 
+                                          7.0, 7.4, 7.8, 8.2, 8.6, 9.0, 9.4, 10.0};
+
     std::array<TH1*, nbin_mult> h1EfficiencyPhi;
     std::array<TH1*, nbin_mult> h1SignalLossPhi;
     std::array<TH1*, nbin_mult> h1EffXSigLossPhi;
@@ -147,12 +157,22 @@ void runEfficiencyHandler(int argc, char* argv[])
     std::array<TH1*, nbin_mult> h1CombEffXSigLossPi;
 
     for (int i = 0; i < nbin_mult; ++i) {
-        h1EfficiencyPhi[i] = PhiEfficiencyHandler.GetEfficiencySpectrum(i);
+        /*h1EfficiencyPhi[i] = PhiEfficiencyHandler.GetEfficiencySpectrum(i);
         h1SignalLossPhi[i] = PhiEfficiencyHandler.GetSignalLossSpectrum(i);
         h1EffXSigLossPhi[i] = PhiEfficiencyHandler.GetEffXSigLossSpectrum(i);
         h1EfficiencyK0S[i] = K0SEfficiencyHandler.GetEfficiencySpectrum(i);
         h1SignalLossK0S[i] = K0SEfficiencyHandler.GetSignalLossSpectrum(i);
-        h1EffXSigLossK0S[i] = K0SEfficiencyHandler.GetEffXSigLossSpectrum(i);
+        h1EffXSigLossK0S[i] = K0SEfficiencyHandler.GetEffXSigLossSpectrum(i);*/
+
+        bool rebin = true; // Set to true to use rebinned pT axis
+
+        h1EfficiencyPhi[i] = PhiEfficiencyHandler.GetEfficiencySpectrum(i, rebin, rebinnedpTAxisPhi);
+        h1SignalLossPhi[i] = PhiEfficiencyHandler.GetSignalLossSpectrum(i, rebin, rebinnedpTAxisPhi);
+        h1EffXSigLossPhi[i] = PhiEfficiencyHandler.GetEffXSigLossSpectrum(i, rebin, rebinnedpTAxisPhi);
+        h1EfficiencyK0S[i] = K0SEfficiencyHandler.GetEfficiencySpectrum(i, rebin, rebinnedpTAxisK0S);
+        h1SignalLossK0S[i] = K0SEfficiencyHandler.GetSignalLossSpectrum(i, rebin, rebinnedpTAxisK0S);
+        h1EffXSigLossK0S[i] = K0SEfficiencyHandler.GetEffXSigLossSpectrum(i, rebin, rebinnedpTAxisK0S);
+
         h1Efficiency1Pi[i] = PiEfficiencyHandler.GetEfficiencySpectrum(i);
         h1Efficiency2Pi[i] = PiEfficiencyHandler.GetEfficiencySpectrum2(i);
         h1SignalLossPi[i] = PiEfficiencyHandler.GetSignalLossSpectrum(i);

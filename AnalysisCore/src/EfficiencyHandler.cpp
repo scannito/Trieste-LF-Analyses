@@ -259,7 +259,7 @@ TH3* EfficiencyHandler::GetCombEffXSigLoss()
     return combinedHist;
 }
 
-TH1* EfficiencyHandler::GetEfficiencySpectrum(int binMult)
+TH1* EfficiencyHandler::GetEfficiencySpectrum(int binMult, bool rebin, const std::vector<double>& rebinnedpTAxis)
 {
     TH1* projReco = mRecoHistogram->ProjectionY(Form("ProjEfficiency%s", PartToString(mParticleType).c_str()), binMult + 1, binMult + 1, 1, nbin_deltay);
     if (!projReco) {
@@ -271,6 +271,22 @@ TH1* EfficiencyHandler::GetEfficiencySpectrum(int binMult)
         std::cerr << "Error: Failed to project GenAssocReco histogram." << std::endl;
         return nullptr;
     }
+
+    // Optional rebinning
+    if (rebin && rebinnedpTAxis.size() > 1) {
+        const int nBinsNew = rebinnedpTAxis.size() - 1;
+        const double* binEdges = rebinnedpTAxis.data();
+
+        TH1* rebinnedReco = projReco->Rebin(nBinsNew, Form("ProjEfficiencyRebinned%s", PartToString(mParticleType).c_str()), binEdges);
+        TH1* rebinnedGenAssoc = projGenAssocReco->Rebin(nBinsNew, Form("ProjSignalLossRebinned%s", PartToString(mParticleType).c_str()), binEdges);
+
+        delete projReco;
+        delete projGenAssocReco;
+
+        projReco = rebinnedReco;
+        projGenAssocReco = rebinnedGenAssoc;
+    }
+    
     TH1* efficiencySpectrum = (TH1*)projReco->Clone(Form("EfficiencySpectrum%s", PartToString(mParticleType).c_str()));
     efficiencySpectrum->Divide(projReco, projGenAssocReco, 1, 1, "B");
 
@@ -280,7 +296,7 @@ TH1* EfficiencyHandler::GetEfficiencySpectrum(int binMult)
     return efficiencySpectrum;
 }
 
-TH1* EfficiencyHandler::GetEfficiencySpectrum2(int binMult)
+TH1* EfficiencyHandler::GetEfficiencySpectrum2(int binMult, bool rebin, const std::vector<double>& rebinnedpTAxis)
 {
     if (mParticleType != ParticleType::Pion) {
         std::cerr << "Error: This method is only applicable for Pion particle type." << std::endl;
@@ -296,6 +312,22 @@ TH1* EfficiencyHandler::GetEfficiencySpectrum2(int binMult)
         std::cerr << "Error: Failed to project reco histogram." << std::endl;
         return nullptr;
     }
+
+    // Optional rebinning
+    if (rebin && rebinnedpTAxis.size() > 1) {
+        const int nBinsNew = rebinnedpTAxis.size() - 1;
+        const double* binEdges = rebinnedpTAxis.data();
+
+        TH1* rebinnedReco2 = projReco2->Rebin(nBinsNew, Form("ProjEfficiency2Rebinned%s", PartToString(mParticleType).c_str()), binEdges);
+        TH1* rebinnedReco = projReco->Rebin(nBinsNew, Form("ProjEfficiencyRebinned%s", PartToString(mParticleType).c_str()), binEdges);
+
+        delete projReco2;
+        delete projReco;
+
+        projReco2 = rebinnedReco2;
+        projReco = rebinnedReco;
+    }
+
     TH1* efficiencySpectrum2 = (TH1*)projReco2->Clone(Form("EfficiencySpectrum2%s", PartToString(mParticleType).c_str()));
     efficiencySpectrum2->Divide(projReco2, projReco, 1, 1, "B");
 
@@ -305,14 +337,14 @@ TH1* EfficiencyHandler::GetEfficiencySpectrum2(int binMult)
     return efficiencySpectrum2;
 }
 
-TH1* EfficiencyHandler::GetCombinedEfficiencySpectrum(int binMult)
+TH1* EfficiencyHandler::GetCombinedEfficiencySpectrum(int binMult, bool rebin, const std::vector<double>& rebinnedpTAxis)
 {
     if (mParticleType != ParticleType::Pion) {
         std::cerr << "Error: This method is only applicable for Pion particle type." << std::endl;
         return nullptr;
     }
-    TH1* efficiencySpectrum = GetEfficiencySpectrum(binMult);
-    TH1* efficiencySpectrum2 = GetEfficiencySpectrum2(binMult);
+    TH1* efficiencySpectrum = GetEfficiencySpectrum(binMult, rebin, rebinnedpTAxis);
+    TH1* efficiencySpectrum2 = GetEfficiencySpectrum2(binMult, rebin, rebinnedpTAxis);
     if (!efficiencySpectrum || !efficiencySpectrum2) {
         std::cerr << "Error: Failed to get efficiency spectrum histograms." << std::endl;
         return nullptr;
@@ -325,7 +357,7 @@ TH1* EfficiencyHandler::GetCombinedEfficiencySpectrum(int binMult)
     return efficiencySpectrum;
 }
 
-TH1* EfficiencyHandler::GetSignalLossSpectrum(int binMult)
+TH1* EfficiencyHandler::GetSignalLossSpectrum(int binMult, bool rebin, const std::vector<double>& rebinnedpTAxis)
 {
     TH1* projGenAssocReco = mGenAssocRecoHistogram->ProjectionY(Form("ProjSignalLoss%s", PartToString(mParticleType).c_str()), binMult + 1, binMult + 1, 1, nbin_deltay);
     if (!projGenAssocReco) {
@@ -337,6 +369,22 @@ TH1* EfficiencyHandler::GetSignalLossSpectrum(int binMult)
         std::cerr << "Error: Failed to project Gen histogram." << std::endl;
         return nullptr;
     }
+
+    // Optional rebinning
+    if (rebin && rebinnedpTAxis.size() > 1) {
+        const int nBinsNew = rebinnedpTAxis.size() - 1;
+        const double* binEdges = rebinnedpTAxis.data();
+
+        TH1* rebinnedGenAssocReco = projGenAssocReco->Rebin(nBinsNew, Form("ProjSignalLossRebinned%s", PartToString(mParticleType).c_str()), binEdges);
+        TH1* rebinnedGen = projGen->Rebin(nBinsNew, Form("ProjGenRebinned%s", PartToString(mParticleType).c_str()), binEdges);
+
+        delete projGenAssocReco;
+        delete projGen;
+
+        projGenAssocReco = rebinnedGenAssocReco;
+        projGen = rebinnedGen;
+    }
+
     TH1* signalLossSpectrum = (TH1*)projGenAssocReco->Clone(Form("SignalLossSpectrum%s", PartToString(mParticleType).c_str()));
     signalLossSpectrum->Divide(projGenAssocReco, projGen, 1, 1, "B");
 
@@ -346,10 +394,10 @@ TH1* EfficiencyHandler::GetSignalLossSpectrum(int binMult)
     return signalLossSpectrum;
 }
 
-TH1* EfficiencyHandler::GetEffXSigLossSpectrum(int binMult)
+TH1* EfficiencyHandler::GetEffXSigLossSpectrum(int binMult, bool rebin, const std::vector<double>& rebinnedpTAxis)
 {
-    TH1* efficiencySpectrum = GetEfficiencySpectrum(binMult);
-    TH1* signalLossSpectrum = GetSignalLossSpectrum(binMult);
+    TH1* efficiencySpectrum = GetEfficiencySpectrum(binMult, rebin, rebinnedpTAxis);
+    TH1* signalLossSpectrum = GetSignalLossSpectrum(binMult, rebin, rebinnedpTAxis);
     if (!efficiencySpectrum || !signalLossSpectrum) {
         std::cerr << "Error: Failed to get efficiency or signal loss spectrum histogram." << std::endl;
         return nullptr;
@@ -362,14 +410,14 @@ TH1* EfficiencyHandler::GetEffXSigLossSpectrum(int binMult)
     return efficiencySpectrum;
 }
 
-TH1* EfficiencyHandler::GetCombEffXSigLossSpectrum(int binMult)
+TH1* EfficiencyHandler::GetCombEffXSigLossSpectrum(int binMult, bool rebin, const std::vector<double>& rebinnedpTAxis)
 {
     if (mParticleType != ParticleType::Pion) {
         std::cerr << "Error: This method is only applicable for Pion particle type." << std::endl;
         return nullptr;
     }
-    TH1* efficiencySpectrum = GetCombinedEfficiencySpectrum(binMult);
-    TH1* signalLossSpectrum = GetSignalLossSpectrum(binMult);
+    TH1* efficiencySpectrum = GetCombinedEfficiencySpectrum(binMult, rebin, rebinnedpTAxis);
+    TH1* signalLossSpectrum = GetSignalLossSpectrum(binMult, rebin, rebinnedpTAxis);
     if (!efficiencySpectrum || !signalLossSpectrum) {
         std::cerr << "Error: Failed to get efficiency or signal loss spectrum histogram." << std::endl;
         return nullptr;

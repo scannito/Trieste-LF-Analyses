@@ -14,6 +14,7 @@ const std::vector<Int_t> Markers = {20, 21, 33, 34, 29, 41, 47, 43, 53, 56, 57, 
 
 constexpr Int_t nbin_deltay = 20, nbin_deltay_inclusive = 2, nbin_mult = 10, nbin_massPhi = 13, nbin_pTPhi = 7;
 struct nbin_pT {
+    static constexpr Int_t Phi = 7;
     static constexpr Int_t K0S = 9;
     static constexpr Int_t Pi = 11;
 };
@@ -22,6 +23,7 @@ const std::array<Double_t, nbin_deltay_inclusive> deltay_axis = {1.0, 0.5};
 const std::array<Double_t, nbin_mult+1> mult_axis = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
 
 struct pT_axis {
+    inline static const std::vector<Double_t> Phi{0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0};
     inline static const std::vector<Double_t> K0S{0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0};
     inline static const std::vector<Double_t> Pi{0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0};
 };
