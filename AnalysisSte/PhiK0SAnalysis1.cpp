@@ -16,6 +16,10 @@
 #include "TGraphAsymmErrors.h"
 #include "TMultiGraph.h"
 
+#include <array>
+#include <string>
+#include <vector>
+
 #include "THnSparseProjector.h"
 #include "LFInvMassFitter.h"
 #include "EfficiencyHandler.h"
@@ -28,11 +32,17 @@
 // Main logics declaration
 int runTHnSparseProjector(int argc, char* argv[]);
 int runLFInvMassFitter(int argc, char* argv[]);
-int runEfficiencyHandler(int argc, char* argv[]);
+void runEfficiencyHandler(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
-    //TApplication app("PhiK0SAnalysis", &argc, argv);
+    int argcCopy = argc;
+    char** argvCopy = new char*[argcCopy];
+    for (int i = 0; i < argcCopy; ++i) {
+        argvCopy[i] = argv[i];
+    }
+
+    TApplication app("PhiK0SAnalysis", &argc, argv);
 
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <mode> [args...]\n"
@@ -51,13 +61,12 @@ int main(int argc, char* argv[])
     } else if (mode == "fitter") {
         return runLFInvMassFitter(argc - 1, &argv[1]);
     } else if (mode == "efficiency") {
-        return runEfficiencyHandler(argc - 1, &argv[1]);
+        runEfficiencyHandler(argcCopy - 1, &argvCopy[1]);
     } else {
         std::cerr << "Unknown mode: " << mode << "\n";
         return 1;
     }
-
-    //app.Run();
+    app.Run();
 }
 
 int runTHnSparseProjector(int argc, char* argv[])
@@ -69,14 +78,15 @@ int runTHnSparseProjector(int argc, char* argv[])
 
     std::vector<std::string> requiredKeys = {"inputFile", "objectPath", "outputFile"};
 
-    THnSparseProjector THnSparseProjectorPhiK0S(argv[1], requiredKeys);
     std::vector<AxisCut> slicingK0S = { {0, 1, nbin_deltay}, {1, 1, nbin_mult}, {2, -1, nbin_pT::K0S}  };
+    THnSparseProjector THnSparseProjectorPhiK0S(argv[1], requiredKeys);
     THnSparseProjectorPhiK0S.ExportProjections(nbin_pT::K0S, slicingK0S, "h2PhiK0SInvMass", {4, 3});
 
-    THnSparseProjector THnSparseProjectorPhiPi(argv[2], requiredKeys);
     std::vector<AxisCut> slicingPion = { {0, 1, nbin_deltay}, {1, 1, nbin_mult}, {2, -1, nbin_pT::Pi} };
-    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, slicingPion, "h2PhiInvMassPiNSigmaTPC", {5, 3});
-    THnSparseProjectorPhiPi.ExportProjections(nbin_pT::Pi, slicingPion, "h2PhiInvMassPiNSigmaTOF", {5, 4});
+    THnSparseProjector THnSparseProjectorPhiPiTPC(argv[2], requiredKeys);
+    THnSparseProjectorPhiPiTPC.ExportProjections(nbin_pT::Pi, slicingPion, "h2PhiInvMassPiNSigmaTPC", {4, 3});
+    THnSparseProjector THnSparseProjectorPhiPiTOF(argv[3], requiredKeys);
+    THnSparseProjectorPhiPiTOF.ExportProjections(nbin_pT::Pi, slicingPion, "h2PhiInvMassPiNSigmaTOF", {4, 3});
 
     return 0;
 }
@@ -103,28 +113,64 @@ int runLFInvMassFitter(int argc, char* argv[])
     return 0;
 }
 
-int runEfficiencyHandler(int argc, char* argv[])
+void runEfficiencyHandler(int argc, char* argv[])
 {
-    if (argc < 2) {
+    if (argc < 4) {
         std::cerr << "Usage: efficiency <inputPhi.json> <inputK0S.json> <inputPi.json>\n";
-        return 1;
+        return;
     }
 
     std::vector<std::string> requiredKeys1 = {"inputFile", "recoPath", "genPath", "genAssocRecoPath", "outputFile"};
 
     EfficiencyHandler PhiEfficiencyHandler("Phi", argv[1], requiredKeys1);
-    //PhiEfficiencyHandler.ExportCorrections();
-    PhiEfficiencyHandler.ExportCorrectionsForCCDB();
+    //PhiEfficiencyHandler.ExportCorrectionsForCCDB();
 
     EfficiencyHandler K0SEfficiencyHandler("K0S", argv[2], requiredKeys1);
-    //K0SEfficiencyHandler.ExportCorrections();
-    K0SEfficiencyHandler.ExportCorrectionsForCCDB();
+    //K0SEfficiencyHandler.ExportCorrectionsForCCDB();
 
     std::vector<std::string> requiredKeys2 = {"inputFile", "recoPath", "recoPath2", "genPath", "genAssocRecoPath", "outputFile"};
 
     EfficiencyHandler PiEfficiencyHandler("Pion", argv[3], requiredKeys2);
-    //PiEfficiencyHandler.ExportCorrections();
-    PiEfficiencyHandler.ExportCorrectionsForCCDB();
+    //PiEfficiencyHandler.ExportCorrectionsForCCDB();
 
-    return 0;
+    std::array<TH1*, nbin_mult> h1EfficiencyPhi;
+    std::array<TH1*, nbin_mult> h1SignalLossPhi;
+    std::array<TH1*, nbin_mult> h1EffXSigLossPhi;
+    std::array<TH1*, nbin_mult> h1EfficiencyK0S;
+    std::array<TH1*, nbin_mult> h1SignalLossK0S;
+    std::array<TH1*, nbin_mult> h1EffXSigLossK0S;
+    std::array<TH1*, nbin_mult> h1Efficiency1Pi;
+    std::array<TH1*, nbin_mult> h1Efficiency2Pi;
+    std::array<TH1*, nbin_mult> h1SignalLossPi;
+    std::array<TH1*, nbin_mult> h1EffXSigLossPi;
+    std::array<TH1*, nbin_mult> h1CombinedEfficiencyPi;
+    std::array<TH1*, nbin_mult> h1CombEffXSigLossPi;
+
+    for (int i = 0; i < nbin_mult; ++i) {
+        h1EfficiencyPhi[i] = PhiEfficiencyHandler.GetEfficiencySpectrum(i);
+        h1SignalLossPhi[i] = PhiEfficiencyHandler.GetSignalLossSpectrum(i);
+        h1EffXSigLossPhi[i] = PhiEfficiencyHandler.GetEffXSigLossSpectrum(i);
+        h1EfficiencyK0S[i] = K0SEfficiencyHandler.GetEfficiencySpectrum(i);
+        h1SignalLossK0S[i] = K0SEfficiencyHandler.GetSignalLossSpectrum(i);
+        h1EffXSigLossK0S[i] = K0SEfficiencyHandler.GetEffXSigLossSpectrum(i);
+        h1Efficiency1Pi[i] = PiEfficiencyHandler.GetEfficiencySpectrum(i);
+        h1Efficiency2Pi[i] = PiEfficiencyHandler.GetEfficiencySpectrum2(i);
+        h1SignalLossPi[i] = PiEfficiencyHandler.GetSignalLossSpectrum(i);
+        h1EffXSigLossPi[i] = PiEfficiencyHandler.GetEffXSigLossSpectrum(i);
+        h1CombinedEfficiencyPi[i] = PiEfficiencyHandler.GetCombinedEfficiencySpectrum(i);
+        h1CombEffXSigLossPi[i] = PiEfficiencyHandler.GetCombEffXSigLossSpectrum(i);
+    }
+
+    std::vector<TCanvas*> cEfficiencyPhi = PlotSpectra({ h1EfficiencyPhi });
+    std::vector<TCanvas*> cSignalLossPhi = PlotSpectra({ h1SignalLossPhi });
+    std::vector<TCanvas*> cCombEfficiencyPhi = PlotSpectra({ h1EffXSigLossPhi });
+    std::vector<TCanvas*> cEfficiencyK0S = PlotSpectra({ h1EfficiencyK0S });
+    std::vector<TCanvas*> cSignalLossK0S = PlotSpectra({ h1SignalLossK0S });
+    std::vector<TCanvas*> cCombEfficiencyK0S = PlotSpectra({ h1EffXSigLossK0S });
+    std::vector<TCanvas*> cEfficiency1Pi = PlotSpectra({ h1Efficiency1Pi });
+    std::vector<TCanvas*> cEfficiency2Pi = PlotSpectra({ h1Efficiency2Pi });
+    std::vector<TCanvas*> cSignalLossPi = PlotSpectra({ h1SignalLossPi });
+    std::vector<TCanvas*> cCombEfficiencyPi = PlotSpectra({ h1EffXSigLossPi });
+    std::vector<TCanvas*> cCombinedEfficiencyPi = PlotSpectra({ h1CombinedEfficiencyPi });
+    std::vector<TCanvas*> cCombEfficiency2Pi = PlotSpectra({ h1CombEffXSigLossPi });
 }

@@ -151,3 +151,66 @@ inline std::array<TCanvas*, nbin_deltay> PlotHistograms(TH1D* h1Yield[nbin_delta
 
     return cYield;
 }
+
+inline std::vector<TCanvas*> PlotSpectra(const std::vector<std::array<TH1*, nbin_mult>>& h1SpectraSet/*, std::string outPath, std::string name*/) 
+{
+    std::vector<TCanvas*> cSpectraSet(h1SpectraSet.size());
+
+    std::vector<TLegend*> leg1Set(h1SpectraSet.size());
+    std::vector<TLegend*> leg2Set(h1SpectraSet.size());
+
+    for (size_t i = 0; i < h1SpectraSet.size(); i++) {
+        auto &h1Spectra = h1SpectraSet[i];
+        auto &cSpectra = cSpectraSet[i];
+        auto &leg1 = leg1Set[i];
+        auto &leg2 = leg2Set[i];
+
+        std::string cName = "c" + std::string(h1Spectra[0]->GetName());
+        cSpectra = new TCanvas(Form(cName.c_str(), i), Form(cName.c_str(), i), 800, 800);
+        cSpectra->cd();
+        //gPad->SetMargin(0.16,0.01,0.13,0.06);
+        gStyle->SetOptStat(0);
+
+        leg1 = new TLegend(0.5, 0.82, 0.8, 0.85);
+        leg1->SetHeader("#bf{This work}");
+        leg1->SetTextSize(0.05);
+        leg1->SetLineWidth(0);
+
+        leg2 = new TLegend(0.5, 0.62, 0.8, 0.82);
+        leg2->SetHeader(Form("pp, #sqrt{#it{s}} = 13.6 TeV, |#it{y}| < %f", deltay_axis[i]));
+        leg2->SetTextSize(0.035);
+        leg2->SetLineWidth(0);
+        leg2->SetNColumns(2);
+
+        for (int j = 0; j < nbin_mult; j++) {
+            auto &h1Spectrum = h1Spectra[j];
+            auto & Color = Colors[j];
+
+            h1Spectrum->SetMarkerStyle(20);
+            h1Spectrum->SetMarkerColor(Color);
+            h1Spectrum->SetMarkerSize(1.5);
+            h1Spectrum->SetLineColor(Color);
+            h1Spectrum->SetLineWidth(2);
+            h1Spectrum->SetFillStyle(3001);
+            h1Spectrum->SetFillColor(Color);
+            //h1Spectrum->GetXaxis()->SetLabelOffset(0.5);
+            h1Spectrum->GetYaxis()->SetTitleSize(0.045);
+            h1Spectrum->GetYaxis()->SetTitleOffset(1.0);
+            h1Spectrum->GetYaxis()->SetLabelSize(0.045);
+            //h1Spectrum->GetYaxis()->SetRangeUser(1e-3, 1e1);
+            //h1Spectrum->GetYaxis()->SetRangeUser(0.4e-5, 1.3e-1);
+
+            if (j == 0) h1Spectrum->Draw();
+            else h1Spectrum->Draw("same");
+
+            leg2->AddEntry(h1Spectrum, Form("%i-%i %%", (int)mult_axis[j], (int)mult_axis[j+1]), "p");
+        }
+
+        /*std::string outName = outPath + name + ".root";
+        cYield[i]->SaveAs(Form(outName.c_str(), i));
+        outName = outPath + name + ".pdf";
+        cYield[i]->SaveAs(Form(outName.c_str(), i));*/
+    }
+
+    return cSpectraSet;
+}
